@@ -2,9 +2,10 @@
 <teamcity-plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                  xsi:noNamespaceSchemaLocation="urn:shemas-jetbrains-com:teamcity-plugin-v1-xml">
   <info>
-    <name>PLUGIN_NAME</name>
-    <display-name>PLUGIN_DESCRIPTION</display-name>
+    <name>symbol-server</name>
+    <display-name>Symbol Server</display-name>
     <version>@Plugin_Version@</version> <!-- will be replaced from script -->
+    <description>Allows to use TeamCity as a Windows symbol server</description>
     <vendor>
       <name>@Plugin_Vendor@</name>  <!-- will be replaced from script -->
       <url>@Plugin_Vendor_Url@</url> <!-- will be replaced from script -->
