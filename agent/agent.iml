@@ -8,6 +8,7 @@
           <file>jar://$TeamCityDistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentSpring.xml</file>
           <file>jar://$TeamCityDistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentPlugins.xml</file>
           <file>file://$MODULE_DIR$/fake-teamcity-agent-plugin-context.xml</file>
+          <file>file://$MODULE_DIR$/src/META-INF/build-agent-plugin-symbol-server.xml</file>
         </fileset>
       </configuration>
     </facet>
@@ -24,6 +25,7 @@
     <orderEntry type="library" name="log4j" level="project" />
     <orderEntry type="library" name="Idea-OpenApi" level="project" />
     <orderEntry type="module" module-name="common" />
+    <orderEntry type="library" name="TeamCity agent runtime" level="project" />
   </component>
 </module>
 
