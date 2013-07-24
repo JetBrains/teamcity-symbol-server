@@ -7,5 +7,6 @@
         >
 
   <bean class="jetbrains.buildServer.symbols.IndexSymbolsBuildFeature"/>
+  <bean class="jetbrains.buildServer.symbols.BuildSymbolsIndexProvider"/>
 
 </beans>
