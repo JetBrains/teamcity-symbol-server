@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
-  public static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
+  private static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
 
   public static final String PDB_FILE_EXTENSION = "pdb";
   public static final String EXE_FILE_EXTENSION = "exe";
@@ -60,7 +60,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           myBuild.getBuildLogger().warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published.");
         } else {
-          myBuild.getBuildLogger().message("Symbols are found in build artifacts.");
           final File targetDir = myBuild.getBuildTempDirectory();
           try {
             final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, targetDir, myBuild.getBuildLogger());
