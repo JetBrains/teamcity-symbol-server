@@ -29,7 +29,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   public static final String EXE_FILE_EXTENSION = "exe";
   public static final String DLL_FILE_EXTENSION = "dll";
 
-  public static final String SYMBOLS_EXE = "symbols.exe";
+  public static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   public static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
   public static final String DUMP_BIN_SIGN_CMD = "dumpBinSign";
 
@@ -51,8 +51,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       }
 
       @Override
-      public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
-        super.beforeBuildFinish(build, buildStatus);
+      public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
+        super.afterAtrifactsPublished(build, buildStatus);
         if (myBuild == null || mySymbolsToProcess == null || myBinariesToProcess == null) return;
         if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()) return;
 
@@ -60,14 +60,21 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           myBuild.getBuildLogger().warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published.");
         } else {
+          myBuild.getBuildLogger().message("Symbols are found in build artifacts.");
           final File targetDir = myBuild.getBuildTempDirectory();
           try {
             final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, targetDir, myBuild.getBuildLogger());
-            myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols/symbol-signatures.xml");
+            if(symbolSignaturesFile.exists()){
+              myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
+            }
             final File binariesSignaturesFile = dumpBinarySignatures(myBinariesToProcess, targetDir, myBuild.getBuildLogger());
-            myArtifactsWatcher.addNewArtifactsPath(binariesSignaturesFile + "=>" + ".teamcity/symbols/binary-signatures.xml");
+            if(binariesSignaturesFile.exists()){
+              myArtifactsWatcher.addNewArtifactsPath(binariesSignaturesFile + "=>" + ".teamcity/symbols");
+            }
           } catch (IOException e) {
             LOG.error("Error while dumping symbols/binaries signatures.", e);
+            myBuild.getBuildLogger().error("Error while dumping symbols/binaries signatures.");
+            myBuild.getBuildLogger().exception(e);
           }
         }
         mySymbolsToProcess = null;
@@ -86,8 +93,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       return;
     }
-    LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for symbol files.");
-    myBuild.getBuildLogger().message(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for symbol files.");
+    myBuild.getBuildLogger().message(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
+    LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
     mySymbolsToProcess.addAll(getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION));
     myBinariesToProcess.addAll(getArtifactPathsByFileExtension(artifacts, EXE_FILE_EXTENSION));
     myBinariesToProcess.addAll(getArtifactPathsByFileExtension(artifacts, DLL_FILE_EXTENSION));
@@ -125,10 +132,11 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     for(File file : files){
       commandLine.addParameter(file.getPath());
     }
+    buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
     final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
+    buildLogger.message(execResult.getStdout());
     if (execResult.getExitCode() == 0) return;
-    String message = String.format("%s ends with non-zero exit code.", SYMBOLS_EXE);
-    buildLogger.warning(message);
-    LOG.warn(message);
+    buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
+    buildLogger.warning(execResult.getStderr());
   }
 }
