@@ -7,18 +7,18 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
+import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
-import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -70,10 +70,18 @@ public class DownloadSymbolFilesController extends BaseController {
       WebUtil.notFound(request, response, "Symbol file not found", null);
       return null;
     }
-    final ServletOutputStream out = response.getOutputStream();
-    final ZipArchiveOutputStream output = new ZipArchiveOutputStream(new BufferedOutputStream(out));
-    output.setEncoding(null);
 
+    BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
+    try {
+      InputStream input = buildArtifact.getInputStream();
+      try {
+        FileUtil.copyStreams(input, output);
+      } finally {
+        FileUtil.close(input);
+      }
+    } finally {
+      FileUtil.close(output);
+    }
 
     return null;
   }
