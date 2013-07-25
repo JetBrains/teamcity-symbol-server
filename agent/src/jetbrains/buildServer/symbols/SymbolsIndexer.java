@@ -31,7 +31,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   public static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   public static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
-  public static final String DUMP_BIN_SIGN_CMD = "dumpBinSign";
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final File myNativeToolPath;
@@ -65,10 +64,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
             final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, targetDir, myBuild.getBuildLogger());
             if(symbolSignaturesFile.exists()){
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
-            }
-            final File binariesSignaturesFile = dumpBinarySignatures(myBinariesToProcess, targetDir, myBuild.getBuildLogger());
-            if(binariesSignaturesFile.exists()){
-              myArtifactsWatcher.addNewArtifactsPath(binariesSignaturesFile + "=>" + ".teamcity/symbols");
             }
           } catch (IOException e) {
             LOG.error("Error while dumping symbols/binaries signatures.", e);
@@ -114,12 +109,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private File dumpSymbolSignatures(Collection<File> files, File targetDir, BuildProgressLogger buildLogger) throws IOException {
     final File tempFile = FileUtil.createTempFile(targetDir, "symbol-signatures-", ".xml", false);
     runTool(DUMP_SYMBOL_SIGN_CMD, files, tempFile, buildLogger);
-    return tempFile;
-  }
-
-  private File dumpBinarySignatures(Collection<File> files, File targetDir, BuildProgressLogger buildLogger) throws IOException {
-    final File tempFile = FileUtil.createTempFile(targetDir, "binary-signatures-", ".xml", false);
-    runTool(DUMP_BIN_SIGN_CMD, files, tempFile, buildLogger);
     return tempFile;
   }
 
