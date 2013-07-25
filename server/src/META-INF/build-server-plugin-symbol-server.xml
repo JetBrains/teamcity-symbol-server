@@ -8,5 +8,6 @@
 
   <bean class="jetbrains.buildServer.symbols.IndexSymbolsBuildFeature"/>
   <bean class="jetbrains.buildServer.symbols.BuildSymbolsIndexProvider"/>
+  <bean class="jetbrains.buildServer.symbols.DownloadSymbolFilesController"/>
 
 </beans>

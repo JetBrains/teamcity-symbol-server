@@ -25,18 +25,22 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
+  public static final String PROVIDER_ID = "symbols-index-provider";
+  public static final String FILE_NAME_KEY = "file-name";
+  public static final String ARTIFACT_PATH_KEY = "artifact-path";
+
   private static final Logger LOG = Logger.getLogger(BuildSymbolsIndexProvider.class);
-  private static final String ID = "symbols-index-provider";
 
   @NotNull
   public String getProviderId() {
-    return ID;
+    return PROVIDER_ID;
   }
 
   public void generateMedatadata(@NotNull SBuild sBuild, @NotNull MetadataStorageWriter metadataStorageWriter) {
+    final long buildId = sBuild.getBuildId();
     final BuildArtifact symbols = sBuild.getArtifacts(BuildArtifactsViewMode.VIEW_HIDDEN_ONLY).getArtifact(".teamcity/symbols");
     if(symbols == null){
-      LOG.debug("Build with id " + sBuild.getBuildId() + " doesn't provide symbols index data.");
+      LOG.debug("Build with id " + buildId + " doesn't provide symbols index data.");
       return;
     }
     for(BuildArtifact childArtifact : symbols.getChildren()){
@@ -51,12 +55,12 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
         final String fileName = indexData.get(sign);
         final String artifactPath = locateArtifact(sBuild, fileName);
         if(artifactPath == null){
-          LOG.debug(String.format("Failed to find artifact by name. BuildId - %d. Artifact name - %s.", sBuild.getBuildId(), fileName));
+          LOG.debug(String.format("Failed to find artifact by name. BuildId - %d. Artifact name - %s.", buildId, fileName));
           continue;
         }
         final HashMap<String, String> data = new HashMap<String, String>();
-        data.put("file-name", fileName);
-        data.put("artifact-path", artifactPath);
+        data.put(ARTIFACT_PATH_KEY, artifactPath);
+        data.put(FILE_NAME_KEY, fileName);
         metadataStorageWriter.addParameters(sign, data);
       }
     }
