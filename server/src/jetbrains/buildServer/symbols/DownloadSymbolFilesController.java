@@ -47,27 +47,24 @@ public class DownloadSymbolFilesController extends BaseController {
   protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
     final String requestURI = request.getRequestURI();
     if(requestURI.endsWith(COMPRESSED_FILE_EXTENSION)){
-      //TODO
+      WebUtil.notFound(request, response, "File not found", null);
       return null;
     }
     if(requestURI.endsWith(FILE_POINTER_FILE_EXTENSION)){
-      //TODO
+      WebUtil.notFound(request, response, "File not found", null);
       return null;
     }
-    final int valuableUriPartBeginIndex = requestURI.indexOf(APP_SYMBOLS);
-    if(valuableUriPartBeginIndex == -1){
-      //TODO
-      return null;
-    }
-    final String valuableUriPart = requestURI.substring(valuableUriPartBeginIndex + APP_SYMBOLS.length());
+
+    final String valuableUriPart = requestURI.substring(requestURI.indexOf(APP_SYMBOLS) + APP_SYMBOLS.length());
     final int firstDelimiterPosition = valuableUriPart.indexOf('/');
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
     final String guid = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-    //TODO: log filename and guid
+    LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final BuildArtifact buildArtifact = findArtifact(guid, fileName);
     if(buildArtifact == null){
       WebUtil.notFound(request, response, "Symbol file not found", null);
+      LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
       return null;
     }
 
@@ -89,7 +86,7 @@ public class DownloadSymbolFilesController extends BaseController {
   private BuildArtifact findArtifact(String guid, String fileName) {
     final Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, guid);
     if(!entryIterator.hasNext()){
-      //TODO
+      LOG.debug(String.format("No items found in symbol index for guid '%s'", guid));
       return null;
     }
     final BuildMetadataEntry entry = entryIterator.next();
@@ -97,14 +94,19 @@ public class DownloadSymbolFilesController extends BaseController {
     final String storedFileName = metadata.get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
     final String artifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
     if(!storedFileName.equals(fileName)){
-      //TODO
+      LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
       return null;
     }
-    final SBuild build = myServer.findBuildInstanceById(entry.getBuildId());
+    final long buildId = entry.getBuildId();
+    final SBuild build = myServer.findBuildInstanceById(buildId);
     if(build == null){
-      //TODO
+      LOG.debug(String.format("Build not found by id %d.", buildId));
       return null;
     }
-    return build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).getArtifact(artifactPath);
+    final BuildArtifact buildArtifact = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).getArtifact(artifactPath);
+    if(buildArtifact == null){
+      LOG.debug(String.format("Artifact not found by path %s for build with id %d.", artifactPath, buildId));
+    }
+    return buildArtifact;
   }
 }
