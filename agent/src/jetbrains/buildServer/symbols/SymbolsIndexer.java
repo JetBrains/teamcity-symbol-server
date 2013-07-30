@@ -26,8 +26,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
 
   public static final String PDB_FILE_EXTENSION = "pdb";
-  public static final String EXE_FILE_EXTENSION = "exe";
-  public static final String DLL_FILE_EXTENSION = "dll";
 
   public static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   public static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
@@ -35,33 +33,31 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final File myNativeToolPath;
   @Nullable private AgentRunningBuild myBuild;
-  @Nullable private Collection<File> myBinariesToProcess;
   @Nullable private Collection<File> mySymbolsToProcess;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor, @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher, @NotNull final ArtifactsWatcher artifactsWatcher) {
-    myNativeToolPath = new File(new File(pluginDescriptor.getPluginRoot(), "bin"), SYMBOLS_EXE);
     myArtifactsWatcher = artifactsWatcher;
+    myNativeToolPath = new File(new File(pluginDescriptor.getPluginRoot(), "bin"), SYMBOLS_EXE);
+
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
         myBuild = runningBuild;
-        myBinariesToProcess = new HashSet<File>();
         mySymbolsToProcess = new HashSet<File>();
       }
 
       @Override
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
-        if (myBuild == null || mySymbolsToProcess == null || myBinariesToProcess == null) return;
+        if (myBuild == null || mySymbolsToProcess == null) return;
         if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()) return;
 
         if (mySymbolsToProcess.isEmpty()) {
           myBuild.getBuildLogger().warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published.");
         } else {
-          final File targetDir = myBuild.getBuildTempDirectory();
           try {
-            final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, targetDir, myBuild.getBuildLogger());
+            final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, myBuild.getBuildTempDirectory(), myBuild.getBuildLogger());
             if(symbolSignaturesFile.exists()){
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
             }
@@ -72,7 +68,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           }
         }
         mySymbolsToProcess = null;
-        myBinariesToProcess = null;
         myBuild = null;
       }
     });
@@ -81,17 +76,26 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Override
   public void afterCollectingFiles(@NotNull List<ArtifactsCollection> artifacts) {
     super.afterCollectingFiles(artifacts);
-    if(myBuild == null || mySymbolsToProcess == null || myBinariesToProcess == null) return;
+    if(myBuild == null || mySymbolsToProcess == null) return;
     if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
       myBuild.getBuildLogger().warning(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       return;
     }
-    myBuild.getBuildLogger().message(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
     LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
-    mySymbolsToProcess.addAll(getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION));
-    myBinariesToProcess.addAll(getArtifactPathsByFileExtension(artifacts, EXE_FILE_EXTENSION));
-    myBinariesToProcess.addAll(getArtifactPathsByFileExtension(artifacts, DLL_FILE_EXTENSION));
+    Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamProvider(myBuild.getBuildId(), myBuild.getCheckoutDirectory()));
+    for(File pdbFile : pdbFiles){
+      try {
+        myBuild.getBuildLogger().message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
+        pdbFilePatcher.patch(pdbFile);
+        mySymbolsToProcess.add(pdbFile);
+      } catch (Throwable e) {
+        LOG.error("Error occurred while patching symbols file " + pdbFile, e);
+        myBuild.getBuildLogger().error("Error occurred while patching symbols file " + pdbFile);
+        myBuild.getBuildLogger().exception(e);
+      }
+    }
   }
 
   private Collection<File> getArtifactPathsByFileExtension(List<ArtifactsCollection> artifactsCollections, String fileExtension){
@@ -108,11 +112,11 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   private File dumpSymbolSignatures(Collection<File> files, File targetDir, BuildProgressLogger buildLogger) throws IOException {
     final File tempFile = FileUtil.createTempFile(targetDir, "symbol-signatures-", ".xml", false);
-    runTool(DUMP_SYMBOL_SIGN_CMD, files, tempFile, buildLogger);
+    runNativeTool(DUMP_SYMBOL_SIGN_CMD, files, tempFile, buildLogger);
     return tempFile;
   }
 
-  private void runTool(String cmd, Collection<File> files, File output, BuildProgressLogger buildLogger){
+  private void runNativeTool(String cmd, Collection<File> files, File output, BuildProgressLogger buildLogger){
     final GeneralCommandLine commandLine = new GeneralCommandLine();
     commandLine.setExePath(myNativeToolPath.getPath());
     commandLine.addParameter(cmd);

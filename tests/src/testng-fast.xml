@@ -1,8 +1,9 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="PLUGIN tests">
-  <test name="PLUGIN tests">
+<suite name="Symbol Server tests">
+  <test name="Pdb files patcher tests">
     <classes>
-      <class name="SimpleTest"/>
+      <class name="PdbFilePatcherTest"/>
+      <class name="PdbStrExeTest"/>
     </classes>
   </test>
 </suite>
