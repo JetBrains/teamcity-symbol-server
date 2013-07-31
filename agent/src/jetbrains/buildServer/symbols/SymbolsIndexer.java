@@ -130,5 +130,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     if (execResult.getExitCode() == 0) return;
     buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
     buildLogger.warning(execResult.getStderr());
+    buildLogger.warning(execResult.getStdout());
+    buildLogger.exception(execResult.getException());
   }
 }
