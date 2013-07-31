@@ -25,7 +25,7 @@ public class PdbFilePatcherTest extends BaseTestCase {
   }
 
   @Test
-  public void testFoo() throws IOException {
+  public void testFoo() throws Exception {
     File tempFile = new File(myTestHomeDir, "tmp.pdb");
     FileUtil.copy(new File("c:\\temp\\JetBrains.CommandLine.Symbols.pdb"), tempFile);
     myPatcher.patch(tempFile);
