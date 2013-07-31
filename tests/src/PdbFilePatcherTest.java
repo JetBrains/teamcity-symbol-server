@@ -21,7 +21,7 @@ public class PdbFilePatcherTest extends BaseTestCase {
   public void setUp() throws Exception {
     super.setUp();
     myTestHomeDir = createTempDir();
-    myPatcher = new PdbFilePatcher(myTestHomeDir, new SrcSrvStreamProvider(1111, myTestHomeDir));
+    myPatcher = new PdbFilePatcher(myTestHomeDir, new SrcSrvStreamProvider(1111, new File("c:\\Data\\Work\\TeamCity\\trunk\\symbols-native")));
   }
 
   @Test
