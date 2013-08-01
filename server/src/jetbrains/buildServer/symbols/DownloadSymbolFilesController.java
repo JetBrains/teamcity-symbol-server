@@ -58,7 +58,8 @@ public class DownloadSymbolFilesController extends BaseController {
     final String valuableUriPart = requestURI.substring(requestURI.indexOf(APP_SYMBOLS) + APP_SYMBOLS.length());
     final int firstDelimiterPosition = valuableUriPart.indexOf('/');
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
-    final String guid = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
+    final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
+    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final BuildArtifact buildArtifact = findArtifact(guid, fileName);

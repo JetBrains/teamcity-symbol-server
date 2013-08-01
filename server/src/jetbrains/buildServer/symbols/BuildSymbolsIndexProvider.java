@@ -73,13 +73,17 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
       Map<String, String> result = new HashMap<String, String>();
       for (Object signElementObject : document.getRootElement().getChildren()){
         final Element signElement = (Element) signElementObject;
-        result.put(signElement.getAttributeValue("sign"), signElement.getAttributeValue("file"));
+        result.put(extractGuid(signElement.getAttributeValue("sign")), signElement.getAttributeValue("file"));
       }
       return result;
     } catch (JDOMException e) {
       LOG.debug(e);
       return null;
     }
+  }
+
+  private String extractGuid(String sign) {
+    return sign.substring(0, sign.length() - 1); //last symbol is PEDebugType
   }
 
   private String locateArtifact(SBuild build, final String fileName) {
