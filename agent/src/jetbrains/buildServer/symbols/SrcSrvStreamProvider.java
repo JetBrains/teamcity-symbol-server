@@ -28,7 +28,7 @@ import java.util.Date;
  */
 public class SrcSrvStreamProvider {
 
-  private String myRestApiUrl = "http://localhost:8111/bs/guestAuth/app/rest";
+  private static final String myRestApiUrl = "http://localhost:8111/bs/guestAuth/app/rest";
   private long myBuildId;
   private File mySourcesRootDirectory;
 
