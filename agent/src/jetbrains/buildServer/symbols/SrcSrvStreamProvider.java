@@ -19,9 +19,7 @@ package jetbrains.buildServer.symbols;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * @author Evgeniy.Koshkin
@@ -40,25 +38,17 @@ public class SrcSrvStreamProvider {
   public void dumpStreamToFile(File targetFile, Collection<File> sourceFiles) throws IOException {
     final FileWriter fileWriter = new FileWriter(targetFile.getPath(), true);
     try {
-      fileWriter.write("SRCSRV: ini ------------------------------------------------");
-      fileWriter.write(String.format("VERSION=%d", 1));
-      fileWriter.write(String.format("INDEXVERSION=%d", 1));
-      fileWriter.write("VERCTRL=http");
-      fileWriter.write(String.format("DATETIME=%s", (new Date()).toString()));
-
-      fileWriter.write("SRCSRV: variables ------------------------------------------");
-      fileWriter.write("SRCSRVVERCTRL=http");
-      fileWriter.write(String.format("REST_API_URL=%s", myRestApiUrl));
-      fileWriter.write(String.format("BUILD_LOCATOR=id:%d", myBuildId));
-      fileWriter.write("HTTP_EXTRACT_TARGET=%REST_API_URL%/%BUILD_LOCATOR%/sources/files/%var2%");
-      fileWriter.write("SRCSRVTRG=%HTTP_EXTRACT_TARGET%");
+      fileWriter.write("SRCSRV: ini ------------------------------------------------\r\n");
+      fileWriter.write(String.format("VERSION=%d\n", 1));
+      fileWriter.write("SRCSRV: variables ------------------------------------------\r\n");
+      fileWriter.write("SRCSRVTRG=%http_extract_target%\n");
       fileWriter.write("SRCSRVCMD=");
-
-      final URI checkoutDirUri = mySourcesRootDirectory.toURI();
-      fileWriter.write("SRCSRV: source files ------------------------------------------");
+      fileWriter.write(String.format("HTTP_EXTRACT_TARGET=%s/builds/id:%d/sources/files", myRestApiUrl, myBuildId) + "/%var2%\r\n");
+      fileWriter.write("SRCSRV: source files ------------------------------------------\r\n");
+      String sourcesRootDirectoryPath = mySourcesRootDirectory.getCanonicalPath();
       for(File sourceFile : sourceFiles){
-        final File sourceFileAbsolute = sourceFile.getAbsoluteFile();
-        fileWriter.write(String.format("%s*%s", sourceFileAbsolute.getPath(), checkoutDirUri.relativize(sourceFileAbsolute.toURI()).getPath()));
+        final String sourceFileCanonical = sourceFile.getCanonicalPath();
+        fileWriter.write(String.format("%s*%s\r\n", sourceFileCanonical, sourceFileCanonical.substring(sourcesRootDirectoryPath.length() + 1).replace(File.separator, "/")));
       }
 
       fileWriter.write("SRCSRV: end ------------------------------------------------");
