@@ -77,8 +77,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   public void afterCollectingFiles(@NotNull List<ArtifactsCollection> artifacts) {
     super.afterCollectingFiles(artifacts);
     if(myBuild == null || mySymbolsToProcess == null) return;
+    final BuildProgressLogger buildLogger = myBuild.getBuildLogger();
     if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-      myBuild.getBuildLogger().warning(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
+      buildLogger.warning(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       return;
     }
@@ -87,13 +88,13 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamProvider(myBuild.getBuildId(), myBuild.getCheckoutDirectory()));
     for(File pdbFile : pdbFiles){
       try {
-        myBuild.getBuildLogger().message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
-        pdbFilePatcher.patch(pdbFile);
+        buildLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
+        pdbFilePatcher.patch(pdbFile, buildLogger);
         mySymbolsToProcess.add(pdbFile);
       } catch (Throwable e) {
         LOG.error("Error occurred while patching symbols file " + pdbFile, e);
-        myBuild.getBuildLogger().error("Error occurred while patching symbols file " + pdbFile);
-        myBuild.getBuildLogger().exception(e);
+        buildLogger.error("Error occurred while patching symbols file " + pdbFile);
+        buildLogger.exception(e);
       }
     }
   }
