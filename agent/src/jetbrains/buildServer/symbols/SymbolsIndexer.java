@@ -84,8 +84,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       return;
     }
     LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
-    Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamProvider(myBuild.getBuildId(), myBuild.getCheckoutDirectory()));
+    final Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
+    final SrcSrvStreamProvider srcSrvStreamProvider = new SrcSrvStreamProvider(myBuild.getBuildId(), myBuild.getCheckoutDirectory());
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), srcSrvStreamProvider);
     for(File pdbFile : pdbFiles){
       try {
         buildLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
