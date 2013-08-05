@@ -79,7 +79,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     if(myBuild == null || mySymbolsToProcess == null) return;
     final BuildProgressLogger buildLogger = myBuild.getBuildLogger();
     if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-      buildLogger.warning(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       return;
     }
