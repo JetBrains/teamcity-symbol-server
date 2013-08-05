@@ -26,7 +26,8 @@ import java.util.Collection;
  */
 public class SrcSrvStreamProvider {
 
-  private static final String myRestApiUrl = "http://UNIT-519.Labs.IntelliJ.Net:8111/bs/guestAuth/app/rest";
+  private static final String myRestApiUrl = "http://unit-519.labs.intelliJ.net:8111/bs/guestAuth/app/sources";
+
   private long myBuildId;
   private File mySourcesRootDirectory;
 
@@ -39,19 +40,21 @@ public class SrcSrvStreamProvider {
     final FileWriter fileWriter = new FileWriter(targetFile.getPath(), true);
 
     try {
-      fileWriter.write("SRCSRV: ini ------------------------------------------------\n");
-      fileWriter.write(String.format("VERSION=%d\n", 2));
-      fileWriter.write("VERCTRL=http\n");
-      fileWriter.write("SRCSRV: variables ------------------------------------------\n");
-      fileWriter.write("SRCSRVVERCTRL=http\n");
-      fileWriter.write("SRCSRVCMD=cmd.exe\n");
-      fileWriter.write("SRCSRVTRG=%http_extract_target%\n");
-      fileWriter.write(String.format("HTTP_EXTRACT_TARGET=%s/builds/id:%d/sources/files", myRestApiUrl, myBuildId) + "/%var2%\n");
-      fileWriter.write("SRCSRV: source files ------------------------------------------\n");
+      fileWriter.write("SRCSRV: ini ------------------------------------------------\r\n");
+      fileWriter.write("VERSION=3\r\n");
+      fileWriter.write("INDEXVERSION=2\r\n");
+      fileWriter.write("VERCTRL=http\r\n");
+      fileWriter.write("SRCSRV: variables ------------------------------------------\r\n");
+      fileWriter.write("SRCSRVVERCTRL=http\r\n");
+      fileWriter.write(String.format("HTTP_ALIAS=%s/builds/id-%d/sources/files\r\n", myRestApiUrl, myBuildId));
+      fileWriter.write("HTTP_EXTRACT_TARGET=%HTTP_ALIAS%/%var2%\r\n");
+      fileWriter.write("SRCSRVTRG=%HTTP_EXTRACT_TARGET%\r\n");
+      fileWriter.write("SRCSRVCMD=\r\n");
+      fileWriter.write("SRCSRV: source files ------------------------------------------\r\n");
       String sourcesRootDirectoryPath = mySourcesRootDirectory.getCanonicalPath();
       for(File sourceFile : sourceFiles){
         final String sourceFileCanonical = sourceFile.getCanonicalPath();
-        fileWriter.write(String.format("%s*%s\n", sourceFileCanonical, sourceFileCanonical.substring(sourcesRootDirectoryPath.length() + 1).replace(File.separator, "/")));
+        fileWriter.write(String.format("%s*%s\r\n", sourceFileCanonical, sourceFileCanonical.substring(sourcesRootDirectoryPath.length() + 1).replace(File.separator, "/")));
       }
       fileWriter.write("SRCSRV: end ------------------------------------------------");
     }

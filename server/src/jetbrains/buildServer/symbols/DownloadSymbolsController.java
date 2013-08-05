@@ -25,18 +25,18 @@ import java.util.Map;
 /**
  * @author Evgeniy.Koshkin
  */
-public class DownloadSymbolFilesController extends BaseController {
+public class DownloadSymbolsController extends BaseController {
 
   public static final String APP_SYMBOLS = "/app/symbols/";
 
   private static final String COMPRESSED_FILE_EXTENSION = "pd_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
 
-  private static final Logger LOG = Logger.getLogger(DownloadSymbolFilesController.class);
+  private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
 
   @NotNull private final MetadataStorage myBuildMetadataStorage;
 
-  public DownloadSymbolFilesController(@NotNull SBuildServer server, @NotNull WebControllerManager controllerManager, @NotNull MetadataStorage buildMetadataStorage) {
+  public DownloadSymbolsController(@NotNull SBuildServer server, @NotNull WebControllerManager controllerManager, @NotNull MetadataStorage buildMetadataStorage) {
     super(server);
     myBuildMetadataStorage = buildMetadataStorage;
     controllerManager.registerController(APP_SYMBOLS + "**", this);
