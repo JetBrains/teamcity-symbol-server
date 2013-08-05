@@ -128,11 +128,14 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     }
     buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
     final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
-    buildLogger.message(execResult.getStdout());
+    final String stdout = execResult.getStdout();
+    if(!stdout.isEmpty()){
+      buildLogger.message("Stdout: " + stdout);
+    }
     if (execResult.getExitCode() == 0) return;
     buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
-    buildLogger.warning(execResult.getStderr());
-    buildLogger.warning(execResult.getStdout());
+    buildLogger.warning("Stdout: " + stdout);
+    buildLogger.warning("Stderr: " + execResult.getStderr());
     buildLogger.exception(execResult.getException());
   }
 }
