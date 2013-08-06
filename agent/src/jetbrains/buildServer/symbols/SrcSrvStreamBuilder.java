@@ -24,16 +24,12 @@ import java.util.Collection;
 /**
  * @author Evgeniy.Koshkin
  */
-public class SrcSrvStreamProvider {
+public class SrcSrvStreamBuilder {
 
-  private static final String myRestApiUrl = "http://unit-519.labs.intelliJ.net:8111/bs/guestAuth/app/sources";
+  private final FileUrlProvider myUrlProvider;
 
-  private long myBuildId;
-  private File mySourcesRootDirectory;
-
-  public SrcSrvStreamProvider(final long buildId, final File sourcesRootDirectory) {
-    myBuildId = buildId;
-    mySourcesRootDirectory = sourcesRootDirectory;
+  public SrcSrvStreamBuilder(final FileUrlProvider urlProvider) {
+    myUrlProvider = urlProvider;
   }
 
   public void dumpStreamToFile(File targetFile, Collection<File> sourceFiles) throws IOException {
@@ -46,15 +42,14 @@ public class SrcSrvStreamProvider {
       fileWriter.write("VERCTRL=http\r\n");
       fileWriter.write("SRCSRV: variables ------------------------------------------\r\n");
       fileWriter.write("SRCSRVVERCTRL=http\r\n");
-      fileWriter.write(String.format("HTTP_ALIAS=%s/builds/id-%d/sources/files\r\n", myRestApiUrl, myBuildId));
+      fileWriter.write(String.format("HTTP_ALIAS=%s\r\n", myUrlProvider.getHttpAlias()));
       fileWriter.write("HTTP_EXTRACT_TARGET=%HTTP_ALIAS%/%var2%\r\n");
       fileWriter.write("SRCSRVTRG=%HTTP_EXTRACT_TARGET%\r\n");
       fileWriter.write("SRCSRVCMD=\r\n");
       fileWriter.write("SRCSRV: source files ------------------------------------------\r\n");
-      String sourcesRootDirectoryPath = mySourcesRootDirectory.getCanonicalPath();
       for(File sourceFile : sourceFiles){
         final String sourceFileCanonical = sourceFile.getCanonicalPath();
-        fileWriter.write(String.format("%s*%s\r\n", sourceFileCanonical, sourceFileCanonical.substring(sourcesRootDirectoryPath.length() + 1).replace(File.separator, "/")));
+        fileWriter.write(String.format("%s*%s\r\n", sourceFileCanonical, myUrlProvider.getFileUrl(sourceFileCanonical)));
       }
       fileWriter.write("SRCSRV: end ------------------------------------------------");
     }

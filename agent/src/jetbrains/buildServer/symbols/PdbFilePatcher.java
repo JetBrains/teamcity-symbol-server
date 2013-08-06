@@ -18,11 +18,11 @@ public class PdbFilePatcher {
   private final SrcToolExe mySrcToolExe = new SrcToolExe();
 
   private final File myHomeDir;
-  private SrcSrvStreamProvider myIndexInputProvider;
+  private SrcSrvStreamBuilder mySrcSrvStreamBuilder;
 
-  public PdbFilePatcher(final File homeDir, final SrcSrvStreamProvider indexInputProvider) {
+  public PdbFilePatcher(final File homeDir, final SrcSrvStreamBuilder srcSrvStreamBuilder) {
     myHomeDir = homeDir;
-    myIndexInputProvider = indexInputProvider;
+    mySrcSrvStreamBuilder = srcSrvStreamBuilder;
   }
 
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
@@ -34,11 +34,7 @@ public class PdbFilePatcher {
       return;
     }
     final File tmpFile = FileUtil.createTempFile(myHomeDir, "pdb-", ".patch", false);
-    myIndexInputProvider.dumpStreamToFile(tmpFile, sourceFiles);
+    mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
     myPdbStrExe.doCommand(PdbStrExeCommand.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
-//    final File tmpFile1 = FileUtil.createTempFile(myHomeDir, "pdb-", ".patch", false);
-//    myPdbStrExe.doCommand(PdbStrExeCommand.READ, symbolsFile, tmpFile1, PdbStrExe.SRCSRV_STREAM_NAME);
-//    if(!FileUtil.checkContentEqual(tmpFile, tmpFile1))
-//      throw new Exception("'srcsrv' stream content written to pdb differs from initial one");
   }
 }

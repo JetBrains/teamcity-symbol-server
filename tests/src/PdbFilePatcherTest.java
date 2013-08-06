@@ -1,7 +1,7 @@
 import com.intellij.openapi.util.io.FileUtil;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.symbols.PdbFilePatcher;
-import jetbrains.buildServer.symbols.SrcSrvStreamProvider;
+import jetbrains.buildServer.symbols.SrcSrvStreamBuilder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -20,7 +20,7 @@ public class PdbFilePatcherTest extends BaseTestCase {
   public void setUp() throws Exception {
     super.setUp();
     myTestHomeDir = createTempDir();
-    myPatcher = new PdbFilePatcher(myTestHomeDir, new SrcSrvStreamProvider(1111, new File("c:\\Data\\Work\\TeamCity\\trunk\\symbols-native")));
+    myPatcher = new PdbFilePatcher(myTestHomeDir, new SrcSrvStreamBuilder(null));
   }
 
   @Test

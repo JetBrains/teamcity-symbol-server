@@ -84,8 +84,12 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     }
     LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
     final Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
-    final SrcSrvStreamProvider srcSrvStreamProvider = new SrcSrvStreamProvider(myBuild.getBuildId(), myBuild.getCheckoutDirectory());
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), srcSrvStreamProvider);
+    if(pdbFiles.isEmpty()) return;
+
+    final FileUrlProvider urlProvider = getUrlProviderForBuild(myBuild, buildLogger);
+    if(urlProvider == null) return;
+
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamBuilder(urlProvider));
     for(File pdbFile : pdbFiles){
       try {
         buildLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
@@ -97,6 +101,18 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         buildLogger.exception(e);
       }
     }
+  }
+
+  @Nullable
+  private FileUrlProvider getUrlProviderForBuild(@NotNull AgentRunningBuild build, BuildProgressLogger buildLogger) {
+    String serverUrl = build.getSharedConfigParameters().get(SymbolsConstants.SERVER_URL_PARAMETER_NAME);
+    if(serverUrl == null){
+      final String message = String.format("Configuration parameter %s was not set. ", SymbolsConstants.SERVER_URL_PARAMETER_NAME);
+      LOG.warn(message);
+      buildLogger.warning(message);
+      return null;
+    }
+    return new FileUrlProvider(serverUrl, build.getBuildId(), build.getCheckoutDirectory());
   }
 
   private Collection<File> getArtifactPathsByFileExtension(List<ArtifactsCollection> artifactsCollections, String fileExtension){
