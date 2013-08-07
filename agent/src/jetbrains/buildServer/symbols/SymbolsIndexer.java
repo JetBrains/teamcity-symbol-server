@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Evgeniy.Koshkin
@@ -43,7 +44,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
         myBuild = runningBuild;
-        mySymbolsToProcess = new HashSet<File>();
+        mySymbolsToProcess = new CopyOnWriteArrayList<File>();
       }
 
       @Override
@@ -91,6 +92,10 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
     final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamBuilder(urlProvider));
     for(File pdbFile : pdbFiles){
+      if(mySymbolsToProcess.contains(pdbFile)){
+        LOG.debug(String.format("File %s already processed. Skipped.", pdbFile.getAbsolutePath()));
+        continue;
+      }
       try {
         buildLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
         pdbFilePatcher.patch(pdbFile, buildLogger);
