@@ -1,13 +1,11 @@
 package jetbrains.buildServer.symbols;
 
-import com.intellij.execution.configurations.GeneralCommandLine;
-import jetbrains.buildServer.ExecResult;
-import jetbrains.buildServer.SimpleCommandLineProcessRunner;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
+import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -16,7 +14,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -28,17 +28,14 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   public static final String PDB_FILE_EXTENSION = "pdb";
 
-  public static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
-  public static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
-
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
-  @NotNull private final File myNativeToolPath;
+  @NotNull private final JetSymbolsExe myJetSymbolsExe;
   @Nullable private AgentRunningBuild myBuild;
   @Nullable private Collection<File> mySymbolsToProcess;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor, @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher, @NotNull final ArtifactsWatcher artifactsWatcher) {
     myArtifactsWatcher = artifactsWatcher;
-    myNativeToolPath = new File(new File(pluginDescriptor.getPluginRoot(), "bin"), SYMBOLS_EXE);
+    myJetSymbolsExe = new JetSymbolsExe(new File(pluginDescriptor.getPluginRoot(), "bin"));
 
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
@@ -58,7 +55,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           LOG.debug("Symbols weren't found in artifacts to be published.");
         } else {
           try {
-            final File symbolSignaturesFile = dumpSymbolSignatures(mySymbolsToProcess, myBuild.getBuildTempDirectory(), myBuild.getBuildLogger());
+            final File symbolSignaturesFile = FileUtil.createTempFile(myBuild.getBuildTempDirectory(), "symbol-signatures-", ".xml", false);
+            myJetSymbolsExe.dumpGuidsToFile(mySymbolsToProcess, symbolSignaturesFile,  myBuild.getBuildLogger());
             if(symbolSignaturesFile.exists()){
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
             }
@@ -130,32 +128,5 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       }
     }
     return result;
-  }
-
-  private File dumpSymbolSignatures(Collection<File> files, File targetDir, BuildProgressLogger buildLogger) throws IOException {
-    final File tempFile = FileUtil.createTempFile(targetDir, "symbol-signatures-", ".xml", false);
-    runNativeTool(DUMP_SYMBOL_SIGN_CMD, files, tempFile, buildLogger);
-    return tempFile;
-  }
-
-  private void runNativeTool(String cmd, Collection<File> files, File output, BuildProgressLogger buildLogger){
-    final GeneralCommandLine commandLine = new GeneralCommandLine();
-    commandLine.setExePath(myNativeToolPath.getPath());
-    commandLine.addParameter(cmd);
-    commandLine.addParameter(String.format("/o=\"%s\"", output.getPath()));
-    for(File file : files){
-      commandLine.addParameter(file.getPath());
-    }
-    buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
-    final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
-    final String stdout = execResult.getStdout();
-    if(!stdout.isEmpty()){
-      buildLogger.message("Stdout: " + stdout);
-    }
-    if (execResult.getExitCode() == 0) return;
-    buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
-    buildLogger.warning("Stdout: " + stdout);
-    buildLogger.warning("Stderr: " + execResult.getStderr());
-    buildLogger.exception(execResult.getException());
   }
 }

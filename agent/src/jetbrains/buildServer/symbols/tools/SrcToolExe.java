@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jetbrains.buildServer.symbols;
+package jetbrains.buildServer.symbols.tools;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
 import jetbrains.buildServer.ExecResult;
@@ -32,8 +32,13 @@ import java.util.Collection;
  */
 public class SrcToolExe {
   private static final String DUMP_SOURCES_FROM_PDB_SWITCH = "-r";
+  private static final String SRCTOOL_EXE = "srctool.exe";
 
-  private final File mySrcToolPath = new File("c:\\Program Files (x86)\\Windows Kits\\8.0\\Debuggers\\x64\\srcsrv\\srctool.exe");
+  private final File mySrcToolPath;
+
+  public SrcToolExe(File homeDir) {
+    mySrcToolPath = new File(homeDir, SRCTOOL_EXE);
+  }
 
   public Collection<File> getReferencedSourceFiles(File symbolsFile) {
     final GeneralCommandLine commandLine = new GeneralCommandLine();

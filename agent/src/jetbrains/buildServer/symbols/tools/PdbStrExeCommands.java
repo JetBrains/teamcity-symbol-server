@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package jetbrains.buildServer.symbols;
+package jetbrains.buildServer.symbols.tools;
 
 /**
  * @author Evgeniy.Koshkin
  */
-public enum PdbStrExeCommand {
+public enum PdbStrExeCommands {
   READ {
     @Override
     public String getCmdSwitch() {

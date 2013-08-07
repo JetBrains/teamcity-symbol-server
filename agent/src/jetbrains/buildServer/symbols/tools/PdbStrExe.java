@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package jetbrains.buildServer.symbols;
+package jetbrains.buildServer.symbols.tools;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
 import jetbrains.buildServer.ExecResult;
@@ -29,13 +29,18 @@ public class PdbStrExe {
 
   public static final String SRCSRV_STREAM_NAME = "srcsrv";
 
+  private static final String PDBSTR_EXE = "pdbstr.exe";
   private static final String STREAM_NAME_SWITCH = "-s";
   private static final String PATH_TO_PDB_FILE_SWITCH = "-p";
   private static final String PATH_TO_INPUT_FILE_SWITCH = "-i";
 
-  private final File myPath = new File("c:\\Program Files (x86)\\Windows Kits\\8.0\\Debuggers\\x64\\srcsrv\\pdbstr.exe");
+  private final File myPath;
 
-  public ExecResult doCommand(final PdbStrExeCommand cmd, final File pdbFile, final File inputStreamFile, final String streamName){
+  public PdbStrExe(File homeDir) {
+    myPath = new File(homeDir, PDBSTR_EXE);
+  }
+
+  public ExecResult doCommand(final PdbStrExeCommands cmd, final File pdbFile, final File inputStreamFile, final String streamName){
     final GeneralCommandLine commandLine = new GeneralCommandLine();
     commandLine.setWorkDirectory(myPath.getParent());
     commandLine.setExePath(myPath.getPath());

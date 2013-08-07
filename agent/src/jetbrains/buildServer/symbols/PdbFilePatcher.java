@@ -1,6 +1,9 @@
 package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.agent.BuildProgressLogger;
+import jetbrains.buildServer.symbols.tools.PdbStrExe;
+import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
+import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
 
@@ -13,9 +16,10 @@ import java.util.Collection;
 public class PdbFilePatcher {
 
   private static final Logger LOG = Logger.getLogger(PdbFilePatcher.class);
+  private static final File TOOLS_HOME_DIR = new File("c:\\Program Files (x86)\\Windows Kits\\8.0\\Debuggers\\x64\\srcsrv\\");
 
-  private final PdbStrExe myPdbStrExe = new PdbStrExe();
-  private final SrcToolExe mySrcToolExe = new SrcToolExe();
+  private final PdbStrExe myPdbStrExe = new PdbStrExe(TOOLS_HOME_DIR);
+  private final SrcToolExe mySrcToolExe = new SrcToolExe(TOOLS_HOME_DIR);
 
   private final File myHomeDir;
   private SrcSrvStreamBuilder mySrcSrvStreamBuilder;
@@ -35,6 +39,6 @@ public class PdbFilePatcher {
     }
     final File tmpFile = FileUtil.createTempFile(myHomeDir, "pdb-", ".patch", false);
     mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
-    myPdbStrExe.doCommand(PdbStrExeCommand.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
   }
 }

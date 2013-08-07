@@ -17,8 +17,8 @@
 import com.intellij.openapi.util.io.FileUtil;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.ExecResult;
-import jetbrains.buildServer.symbols.PdbStrExe;
-import jetbrains.buildServer.symbols.PdbStrExeCommand;
+import jetbrains.buildServer.symbols.tools.PdbStrExe;
+import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -36,7 +36,7 @@ public class PdbStrExeTest extends BaseTestCase {
 
   @BeforeMethod
   public void setUp() throws Exception {
-    myTool = new PdbStrExe();
+    myTool = new PdbStrExe(new File("aaa"));
     File homeDir = createTempDir();
 
     File file = new File(homeDir, "notIndexed.pdb");
@@ -54,7 +54,7 @@ public class PdbStrExeTest extends BaseTestCase {
   public void testRead() throws Exception {
     final File tempFile = createTempFile();
     assertTrue(tempFile.length() == 0);
-    ExecResult execResult = myTool.doCommand(PdbStrExeCommand.READ, myIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    ExecResult execResult = myTool.doCommand(PdbStrExeCommands.READ, myIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
     assertEquals(0, execResult.getExitCode());
     assertFalse(tempFile.length() == 0);
   }
@@ -63,14 +63,14 @@ public class PdbStrExeTest extends BaseTestCase {
   public void testWrite() throws IOException {
     final File tempFile = createTempFile();
     assertTrue(tempFile.length() == 0);
-    myTool.doCommand(PdbStrExeCommand.READ, myNotIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    myTool.doCommand(PdbStrExeCommands.READ, myNotIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
     assertTrue(tempFile.length() == 0);
 
     File inputStreamFile = new File("c:\\temp\\pdb-patch.txt");
     assertFalse(inputStreamFile.length() == 0);
-    myTool.doCommand(PdbStrExeCommand.WRITE, myNotIndexedPdbFile, inputStreamFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    myTool.doCommand(PdbStrExeCommands.WRITE, myNotIndexedPdbFile, inputStreamFile, PdbStrExe.SRCSRV_STREAM_NAME);
 
-    myTool.doCommand(PdbStrExeCommand.READ, myNotIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    myTool.doCommand(PdbStrExeCommands.READ, myNotIndexedPdbFile, tempFile, PdbStrExe.SRCSRV_STREAM_NAME);
     assertFalse(tempFile.length() == 0);
   }
 }
