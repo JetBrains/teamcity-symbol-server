@@ -7,7 +7,7 @@ import java.io.IOException;
  * @author Evgeniy.Koshkin
  */
 public class FileUrlProvider {
-  private static final String GUEST_AUTH_APP_SOURCES = "/guestAuth/app/sources";
+  private static final String GUEST_AUTH_APP_SOURCES = "guestAuth/app/sources";
 
   private final String myServerUrl;
   private final long myBuildId;
