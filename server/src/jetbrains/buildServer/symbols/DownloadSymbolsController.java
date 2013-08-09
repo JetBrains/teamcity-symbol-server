@@ -46,6 +46,12 @@ public class DownloadSymbolsController extends BaseController {
   @Override
   protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
     final String requestURI = request.getRequestURI();
+
+    if(requestURI.endsWith(APP_SYMBOLS)){
+      response.sendError(HttpServletResponse.SC_OK, "TeamCity Symbol Server available");
+      return null;
+    }
+
     if(requestURI.endsWith(COMPRESSED_FILE_EXTENSION)){
       WebUtil.notFound(request, response, "File not found", null);
       return null;
