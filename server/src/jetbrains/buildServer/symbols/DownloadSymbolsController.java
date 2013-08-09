@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class DownloadSymbolsController extends BaseController {
 
-  public static final String APP_SYMBOLS = "/app/symbols/";
+  private static final String APP_SYMBOLS = "/" + SymbolsConstants.APP_SYMBOLS;
 
   private static final String COMPRESSED_FILE_EXTENSION = "pd_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";

@@ -2,8 +2,10 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.BuildFeature;
+import jetbrains.buildServer.serverSide.impl.ServerSettings;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
+import jetbrains.buildServer.web.util.WebUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
@@ -18,14 +20,18 @@ public class IndexSymbolsBuildFeature extends BuildFeature {
 
   private String myEditParametersUrl;
 
-  public IndexSymbolsBuildFeature(PluginDescriptor pluginDescriptor, WebControllerManager web) {
+  public IndexSymbolsBuildFeature(final PluginDescriptor pluginDescriptor, final WebControllerManager web, final ServerSettings serverSettings) {
     final String jsp = pluginDescriptor.getPluginResourcesPath("editSymbolsBuildFeatureParams.jsp");
     final String html = pluginDescriptor.getPluginResourcesPath("symbolIndexerSettings.html");
 
     web.registerController(html, new BaseController() {
       @Override
       protected ModelAndView doHandle(final HttpServletRequest request, final HttpServletResponse response) throws Exception {
-        return new ModelAndView(jsp);
+        final ModelAndView modelAndView = new ModelAndView(jsp);
+        modelAndView.getModel().put("isGuestEnabled", serverSettings.isGuestLoginAllowed());
+        modelAndView.getModel().put("actualServerUrl",  WebUtil.getRootUrl(request));
+        modelAndView.getModel().put("publicFeedUrl", WebUtil.GUEST_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
+        return modelAndView;
       }
     });
 
@@ -44,14 +50,14 @@ public class IndexSymbolsBuildFeature extends BuildFeature {
     return "Symbol Files Indexer";
   }
 
+  @Override
+  public boolean isMultipleFeaturesPerBuildTypeAllowed() {
+    return false;
+  }
+
   @Nullable
   @Override
   public String getEditParametersUrl() {
     return myEditParametersUrl;
-  }
-
-  @Override
-  public boolean isMultipleFeaturesPerBuildTypeAllowed() {
-    return false;
   }
 }
