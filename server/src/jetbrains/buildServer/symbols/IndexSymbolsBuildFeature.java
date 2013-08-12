@@ -12,11 +12,14 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * @author Evgeniy.Koshkin
  */
 public class IndexSymbolsBuildFeature extends BuildFeature {
+
+  private static final String SOURCES_AUTH_REQUIRED_PARAM_NAME = "symbols.sources-authrequired";
 
   private String myEditParametersUrl;
 
@@ -59,5 +62,13 @@ public class IndexSymbolsBuildFeature extends BuildFeature {
   @Override
   public String getEditParametersUrl() {
     return myEditParametersUrl;
+  }
+
+  @NotNull
+  @Override
+  public String describeParameters(@NotNull Map<String, String> params) {
+    return Boolean.parseBoolean(params.get(SOURCES_AUTH_REQUIRED_PARAM_NAME))
+            ? "Access to the indexed sources requires HTTP authentication."
+            : "No authentication is required to retrieve indexed sources";
   }
 }

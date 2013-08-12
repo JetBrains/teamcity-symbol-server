@@ -69,7 +69,8 @@ public class SymbolServerSettingsTab extends SimpleCustomTab {
     super.fillModel(model, request);
     model.put("isGuestEnabled", myServerSettings.isGuestLoginAllowed());
     model.put("actualServerUrl", WebUtil.getRootUrl(request));
-    model.put("publicFeedUrl", WebUtil.GUEST_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
+    model.put("publicUrl", WebUtil.GUEST_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
+    model.put("privateUrl", WebUtil.HTTP_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
   }
 
   private boolean hasAccess() {
