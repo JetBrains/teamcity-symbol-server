@@ -19,8 +19,6 @@ import java.util.Map;
  */
 public class IndexSymbolsBuildFeature extends BuildFeature {
 
-  private static final String SOURCES_AUTH_REQUIRED_PARAM_NAME = "symbols.sources-authrequired";
-
   private String myEditParametersUrl;
 
   public IndexSymbolsBuildFeature(final PluginDescriptor pluginDescriptor, final WebControllerManager web, final ServerSettings serverSettings) {
@@ -67,7 +65,7 @@ public class IndexSymbolsBuildFeature extends BuildFeature {
   @NotNull
   @Override
   public String describeParameters(@NotNull Map<String, String> params) {
-    return Boolean.parseBoolean(params.get(SOURCES_AUTH_REQUIRED_PARAM_NAME))
+    return Boolean.parseBoolean(params.get(SymbolsConstants.SOURCES_AUTH_REQUIRED_PARAM_NAME))
             ? "Access to the indexed sources requires HTTP authentication."
             : "No authentication is required to retrieve indexed sources";
   }

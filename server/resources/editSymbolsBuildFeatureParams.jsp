@@ -11,8 +11,8 @@
   <tr>
     <th>Sources Access:</th>
     <td>
-      <props:checkboxProperty name="symbols.sources-authrequired"/>
-      <label for="symbols.sources-authrequired">Grand access to the sources to authenticated users only.</label>
+      <props:checkboxProperty name="symbols.sources-auth-required"/>
+      <label for="symbols.sources-auth-required">Grand access to the sources to authenticated users only.</label>
     </td>
   </tr>
 </table>

@@ -33,14 +33,14 @@ import javax.servlet.http.HttpServletResponse;
  * @author Evgeniy.Koshkin
  */
 public class DownloadSourcesController extends BaseController {
-  private static final String APP_SOURCES = "/app/sources/";
+
   private static final String VALID_URL_PATTERN = ".*/builds/id-\\d*/sources/.*";
 
   private static final Logger LOG = Logger.getLogger(DownloadSourcesController.class);
 
   public DownloadSourcesController(@NotNull SBuildServer server, @NotNull WebControllerManager controllerManager) {
     super(server);
-    controllerManager.registerController(APP_SOURCES + "**", this);
+    controllerManager.registerController(SymbolsConstants.APP_SOURCES + "**", this);
   }
 
   @Nullable

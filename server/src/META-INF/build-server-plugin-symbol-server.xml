@@ -8,6 +8,7 @@
 
   <bean class="jetbrains.buildServer.symbols.SymbolServerSettingsTab"/>
   <bean class="jetbrains.buildServer.symbols.IndexSymbolsBuildFeature"/>
+  <bean class="jetbrains.buildServer.symbols.SymbolsIndexerParametersPreprocessor"/>
 
   <bean class="jetbrains.buildServer.symbols.BuildSymbolsIndexProvider"/>
   <bean class="jetbrains.buildServer.symbols.DownloadSymbolsController"/>

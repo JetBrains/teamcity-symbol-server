@@ -85,7 +85,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
     if(pdbFiles.isEmpty()) return;
 
-    final FileUrlProvider urlProvider = getUrlProviderForBuild(myBuild, buildLogger);
+    final FileUrlProvider urlProvider = FileUrlProviderFactory.getProvider(myBuild, buildLogger);
     if(urlProvider == null) return;
 
     final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamBuilder(urlProvider));
@@ -104,18 +104,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         buildLogger.exception(e);
       }
     }
-  }
-
-  @Nullable
-  private FileUrlProvider getUrlProviderForBuild(@NotNull AgentRunningBuild build, BuildProgressLogger buildLogger) {
-    String serverUrl = build.getSharedConfigParameters().get(SymbolsConstants.SERVER_URL_PARAMETER_NAME);
-    if(serverUrl == null){
-      final String message = String.format("Configuration parameter %s was not set. ", SymbolsConstants.SERVER_URL_PARAMETER_NAME);
-      LOG.warn(message);
-      buildLogger.warning(message);
-      return null;
-    }
-    return new FileUrlProvider(serverUrl, build.getBuildId(), build.getCheckoutDirectory());
   }
 
   private Collection<File> getArtifactPathsByFileExtension(List<ArtifactsCollection> artifactsCollections, String fileExtension){
