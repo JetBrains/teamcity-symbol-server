@@ -12,4 +12,7 @@ public class SymbolsConstants {
 
   public static final String APP_SYMBOLS = "app/symbols/";
   public static final String APP_SOURCES = "app/sources/";
+
+  public static final String APP_SYMBOLS_INTERNAL = "app/symbols-internal/";
+  public static final String APP_SOURCES_INTERNAL = "app/sources-internal/";
 }

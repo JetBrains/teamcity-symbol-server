@@ -1,20 +1,26 @@
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
+import jetbrains.buildServer.users.SUser;
+import jetbrains.buildServer.users.UserModel;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
+import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
@@ -28,18 +34,30 @@ import java.util.Map;
 public class DownloadSymbolsController extends BaseController {
 
   private static final String APP_SYMBOLS = "/" + SymbolsConstants.APP_SYMBOLS;
+  private static final String APP_SYMBOLS_INTERNAL = "/" + SymbolsConstants.APP_SYMBOLS_INTERNAL;
 
   private static final String COMPRESSED_FILE_EXTENSION = "pd_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
 
   private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
 
+  @NotNull
+  private final UserModel myUserModel;
   @NotNull private final MetadataStorage myBuildMetadataStorage;
 
-  public DownloadSymbolsController(@NotNull SBuildServer server, @NotNull WebControllerManager controllerManager, @NotNull MetadataStorage buildMetadataStorage) {
+  public DownloadSymbolsController(@NotNull SBuildServer server,
+                                   @NotNull WebControllerManager controllerManager,
+                                   @NotNull AuthorizationInterceptor authInterceptor,
+                                   @NotNull UserModel userModel,
+                                   @NotNull MetadataStorage buildMetadataStorage) {
     super(server);
+    myUserModel = userModel;
     myBuildMetadataStorage = buildMetadataStorage;
-    controllerManager.registerController(APP_SYMBOLS + "**", this);
+    final String path = APP_SYMBOLS + "**";
+    controllerManager.registerController(path, this);
+    authInterceptor.addPathNotRequiringAuth(path);
+    final String internalPath = APP_SYMBOLS_INTERNAL + "**";
+    controllerManager.registerController(internalPath, this);
   }
 
   @Nullable
@@ -59,6 +77,29 @@ public class DownloadSymbolsController extends BaseController {
     if(requestURI.endsWith(FILE_POINTER_FILE_EXTENSION)){
       WebUtil.notFound(request, response, "File not found", null);
       return null;
+    }
+
+    final SUser user = SessionUser.getUser(request);
+    if (user != null && !user.isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) {
+      response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
+      return null;
+    } else {
+      if (!myServer.getLoginConfiguration().isGuestLoginAllowed() || !myUserModel.getGuestUser().isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) {
+
+        String authRequiredUrl;
+        final String contextPath = request.getContextPath();
+        if(requestURI.startsWith(contextPath))
+          authRequiredUrl = WebUtil.HTTP_AUTH_PREFIX + requestURI.substring(contextPath.length() + 1);
+        else
+          authRequiredUrl = WebUtil.HTTP_AUTH_PREFIX + requestURI.substring(1);
+
+        authRequiredUrl = authRequiredUrl.replace(APP_SYMBOLS, APP_SYMBOLS_INTERNAL);
+
+        LOG.debug("Unauthorized access to PDB files is denied. Forwarding request to auth-required URL " + authRequiredUrl);
+        final RequestDispatcher dispatcher = request.getRequestDispatcher(authRequiredUrl);
+        dispatcher.forward(request, response);
+        return null;
+      }
     }
 
     final String valuableUriPart = requestURI.substring(requestURI.indexOf(APP_SYMBOLS) + APP_SYMBOLS.length());
