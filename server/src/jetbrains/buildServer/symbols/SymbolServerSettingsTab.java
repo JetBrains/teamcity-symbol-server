@@ -19,7 +19,6 @@ package jetbrains.buildServer.symbols;
 import jetbrains.buildServer.serverSide.auth.AuthUtil;
 import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.serverSide.auth.SecurityContext;
-import jetbrains.buildServer.serverSide.impl.ServerSettings;
 import jetbrains.buildServer.web.openapi.PagePlaces;
 import jetbrains.buildServer.web.openapi.PlaceId;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
@@ -37,11 +36,9 @@ public class SymbolServerSettingsTab extends SimpleCustomTab {
 
   private static final String TAB_ID = "sourceServerSettingsTab";
 
-  @NotNull private final ServerSettings myServerSettings;
   @NotNull private final SecurityContext mySecurityContext;
 
   public SymbolServerSettingsTab(@NotNull final PagePlaces pagePlaces,
-                                 @NotNull final ServerSettings serverSettings,
                                  @NotNull final SecurityContext context,
                                  @NotNull final PluginDescriptor descriptor) {
     super(pagePlaces,
@@ -49,7 +46,6 @@ public class SymbolServerSettingsTab extends SimpleCustomTab {
             TAB_ID,
             descriptor.getPluginResourcesPath("symbolServerSettings.jsp"),
             "Symbol Server");
-    myServerSettings = serverSettings;
     mySecurityContext = context;
     register();
   }
@@ -67,10 +63,8 @@ public class SymbolServerSettingsTab extends SimpleCustomTab {
   @Override
   public void fillModel(@NotNull Map<String, Object> model, @NotNull HttpServletRequest request) {
     super.fillModel(model, request);
-    model.put("isGuestEnabled", myServerSettings.isGuestLoginAllowed());
     model.put("actualServerUrl", WebUtil.getRootUrl(request));
-    model.put("publicUrl", WebUtil.GUEST_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
-    model.put("privateUrl", WebUtil.HTTP_AUTH_PREFIX + SymbolsConstants.APP_SYMBOLS);
+    model.put("appUrl", SymbolsConstants.APP_SYMBOLS);
   }
 
   private boolean hasAccess() {

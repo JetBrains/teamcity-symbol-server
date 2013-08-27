@@ -2,25 +2,26 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
+import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationManager;
+import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationResult;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
+import jetbrains.buildServer.serverSide.SecurityContextEx;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.auth.Permission;
+import jetbrains.buildServer.serverSide.auth.ServerPrincipal;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.users.UserModel;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
-import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
-
-import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
@@ -33,39 +34,39 @@ import java.util.Map;
  */
 public class DownloadSymbolsController extends BaseController {
 
-  private static final String APP_SYMBOLS = "/" + SymbolsConstants.APP_SYMBOLS;
-  private static final String APP_SYMBOLS_INTERNAL = "/" + SymbolsConstants.APP_SYMBOLS_INTERNAL;
-
   private static final String COMPRESSED_FILE_EXTENSION = "pd_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
 
   private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
 
-  @NotNull
-  private final UserModel myUserModel;
+  @NotNull private final UserModel myUserModel;
+  @NotNull private final SecurityContextEx mySecurityContext;
   @NotNull private final MetadataStorage myBuildMetadataStorage;
+  @NotNull private final HttpAuthenticationManager myAuthManager;
 
   public DownloadSymbolsController(@NotNull SBuildServer server,
                                    @NotNull WebControllerManager controllerManager,
                                    @NotNull AuthorizationInterceptor authInterceptor,
+                                   @NotNull SecurityContextEx securityContext,
+                                   @NotNull HttpAuthenticationManager authManager,
                                    @NotNull UserModel userModel,
                                    @NotNull MetadataStorage buildMetadataStorage) {
     super(server);
+    mySecurityContext = securityContext;
     myUserModel = userModel;
     myBuildMetadataStorage = buildMetadataStorage;
-    final String path = APP_SYMBOLS + "**";
+    myAuthManager = authManager;
+    final String path = SymbolsConstants.APP_SYMBOLS + "**";
     controllerManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
-    final String internalPath = APP_SYMBOLS_INTERNAL + "**";
-    controllerManager.registerController(internalPath, this);
   }
 
   @Nullable
   @Override
-  protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
+  protected ModelAndView doHandle(final @NotNull HttpServletRequest request, final @NotNull HttpServletResponse response) throws Exception {
     final String requestURI = request.getRequestURI();
 
-    if(requestURI.endsWith(APP_SYMBOLS)){
+    if(requestURI.endsWith(SymbolsConstants.APP_SYMBOLS)){
       response.sendError(HttpServletResponse.SC_OK, "TeamCity Symbol Server available");
       return null;
     }
@@ -79,53 +80,58 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
 
-    final SUser user = SessionUser.getUser(request);
-    if (user != null && !user.isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) {
+    final HttpAuthenticationResult authResult = myAuthManager.processAuthenticationRequest(request, response);
+    switch (authResult.getType()) {
+      case NOT_APPLICABLE:
+        response.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "TODO"); //TODO error message
+        return null;
+      case UNAUTHENTICATED:
+        return null;
+    }
+
+    final ServerPrincipal principal = authResult.getPrincipal();
+    final SUser user = myUserModel.findUserAccount(principal.getRealm(), principal.getName());
+    if(user == null){
+      response.sendError(HttpServletResponse.SC_FORBIDDEN, "TODO"); //TODO error message
+      return null;
+    }
+    if (!user.isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) { //TODO: check permissions locally (for particular project)
       response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
       return null;
-    } else {
-      if (!myServer.getLoginConfiguration().isGuestLoginAllowed() || !myUserModel.getGuestUser().isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) {
-
-        String authRequiredUrl;
-        final String contextPath = request.getContextPath();
-        if(requestURI.startsWith(contextPath))
-          authRequiredUrl = WebUtil.HTTP_AUTH_PREFIX + requestURI.substring(contextPath.length() + 1);
-        else
-          authRequiredUrl = WebUtil.HTTP_AUTH_PREFIX + requestURI.substring(1);
-
-        authRequiredUrl = authRequiredUrl.replace(APP_SYMBOLS, APP_SYMBOLS_INTERNAL);
-
-        LOG.debug("Unauthorized access to PDB files is denied. Forwarding request to auth-required URL " + authRequiredUrl);
-        final RequestDispatcher dispatcher = request.getRequestDispatcher(authRequiredUrl);
-        dispatcher.forward(request, response);
-        return null;
-      }
     }
 
-    final String valuableUriPart = requestURI.substring(requestURI.indexOf(APP_SYMBOLS) + APP_SYMBOLS.length());
-    final int firstDelimiterPosition = valuableUriPart.indexOf('/');
-    final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
-    final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
-    LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
-
-    final BuildArtifact buildArtifact = findArtifact(guid, fileName);
-    if(buildArtifact == null){
-      WebUtil.notFound(request, response, "Symbol file not found", null);
-      LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
-      return null;
-    }
-
-    BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
     try {
-      InputStream input = buildArtifact.getInputStream();
-      try {
-        FileUtil.copyStreams(input, output);
-      } finally {
-        FileUtil.close(input);
-      }
-    } finally {
-      FileUtil.close(output);
+      mySecurityContext.runAs(user, new SecurityContextEx.RunAsAction() {
+        public void run() throws Throwable {
+          final String valuableUriPart = requestURI.substring(requestURI.indexOf(SymbolsConstants.APP_SYMBOLS) + SymbolsConstants.APP_SYMBOLS.length());
+          final int firstDelimiterPosition = valuableUriPart.indexOf('/');
+          final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
+          final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
+          final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
+          LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
+
+          final BuildArtifact buildArtifact = findArtifact(guid, fileName);
+          if(buildArtifact == null){
+            WebUtil.notFound(request, response, "Symbol file not found", null);
+            LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
+            return;
+          }
+
+          BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
+          try {
+            InputStream input = buildArtifact.getInputStream();
+            try {
+              FileUtil.copyStreams(input, output);
+            } finally {
+              FileUtil.close(input);
+            }
+          } finally {
+            FileUtil.close(output);
+          }
+        }
+      });
+    } catch (Throwable throwable) {
+      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, throwable.getMessage());
     }
 
     return null;
