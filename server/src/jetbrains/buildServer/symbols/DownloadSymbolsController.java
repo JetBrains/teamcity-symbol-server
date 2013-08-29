@@ -75,11 +75,19 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
 
+    final String valuableUriPart = requestURI.substring(requestURI.indexOf(SymbolsConstants.APP_SYMBOLS) + SymbolsConstants.APP_SYMBOLS.length());
+    final int firstDelimiterPosition = valuableUriPart.indexOf('/');
+    final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
+    final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
+    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
+    LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
+
     final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
       public boolean apply(SUser user) {
-        //TODO: check permissions locally (for particular project)
-        //response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
-        return user.isPermissionGrantedForAnyProject(Permission.VIEW_BUILD_RUNTIME_DATA);
+        final String projectId = findRelatedProjectId(guid);
+        if(projectId == null) return false;
+        //TODO: response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
+        return user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
       }
     });
     if (user == null) return null;
@@ -87,13 +95,6 @@ public class DownloadSymbolsController extends BaseController {
     try {
       mySecurityContext.runAs(user, new SecurityContextEx.RunAsAction() {
         public void run() throws Throwable {
-          final String valuableUriPart = requestURI.substring(requestURI.indexOf(SymbolsConstants.APP_SYMBOLS) + SymbolsConstants.APP_SYMBOLS.length());
-          final int firstDelimiterPosition = valuableUriPart.indexOf('/');
-          final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
-          final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-          final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
-          LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
-
           final BuildArtifact buildArtifact = findArtifact(guid, fileName);
           if(buildArtifact == null){
             WebUtil.notFound(request, response, "Symbol file not found", null);
@@ -121,13 +122,13 @@ public class DownloadSymbolsController extends BaseController {
     return null;
   }
 
+  @Nullable
   private BuildArtifact findArtifact(String guid, String fileName) {
-    final Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, guid);
-    if(!entryIterator.hasNext()){
+    final BuildMetadataEntry entry = getMetadataEntry(guid);
+    if(entry == null) {
       LOG.debug(String.format("No items found in symbol index for guid '%s'", guid));
       return null;
     }
-    final BuildMetadataEntry entry = entryIterator.next();
     final Map<String,String> metadata = entry.getMetadata();
     final String storedFileName = metadata.get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
     final String artifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
@@ -146,5 +147,21 @@ public class DownloadSymbolsController extends BaseController {
       LOG.debug(String.format("Artifact not found by path %s for build with id %d.", artifactPath, buildId));
     }
     return buildArtifact;
+  }
+
+  @Nullable
+  private String findRelatedProjectId(String symbolFileId) {
+    //TODO: log errorS
+    final BuildMetadataEntry metadataEntry = getMetadataEntry(symbolFileId);
+    if(metadataEntry == null) return null;
+    final SBuild build = myServer.findBuildInstanceById(metadataEntry.getBuildId());
+    if(build == null) return null;
+    return build.getProjectId();
+  }
+
+  @Nullable
+  private BuildMetadataEntry getMetadataEntry(String key){
+    final Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, key);
+    return !entryIterator.hasNext() ? null : entryIterator.next();
   }
 }
