@@ -18,7 +18,6 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.serverSide.*;
-import jetbrains.buildServer.web.util.WebUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -40,13 +39,11 @@ public class SymbolsIndexerParametersPreprocessor implements BuildStartContextPr
     final Collection<SBuildFeatureDescriptor> buildFeatures = buildType.getResolvedSettings().getBuildFeatures();
     for(SBuildFeatureDescriptor buildFeature : buildFeatures){
       if(!buildFeature.getId().equals(SymbolsConstants.BUILD_FEATURE_TYPE)) continue;
-      boolean isAuthRequiredToGetSources = buildFeature.getParameters().containsKey(SymbolsConstants.SOURCES_AUTH_REQUIRED_PARAM_NAME);
       String serverOwnUrl = context.getSharedParameters().get(SymbolsConstants.SERVER_OWN_URL_PARAM_NAME);
       if(serverOwnUrl == null){
         serverOwnUrl = myRootUrlHolder.getRootUrl();
       }
-      final String authPrefix = isAuthRequiredToGetSources ? WebUtil.HTTP_AUTH_PREFIX : WebUtil.GUEST_AUTH_PREFIX;
-      final String sourceServerUrl = String.format("%s%s%s", serverOwnUrl, authPrefix, SymbolsConstants.APP_SOURCES);
+      final String sourceServerUrl = String.format("%s%s", serverOwnUrl, SymbolsConstants.APP_SOURCES);
       context.addSharedParameter(SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME, sourceServerUrl);
     }
   }

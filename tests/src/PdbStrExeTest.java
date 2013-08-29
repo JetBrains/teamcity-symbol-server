@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import com.intellij.openapi.util.io.FileUtil;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.ExecResult;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
+import jetbrains.buildServer.util.FileUtil;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

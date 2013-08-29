@@ -16,8 +16,11 @@
 
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuildServer;
+import jetbrains.buildServer.users.SUser;
+import jetbrains.buildServer.util.Predicate;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
@@ -35,12 +38,19 @@ import javax.servlet.http.HttpServletResponse;
 public class DownloadSourcesController extends BaseController {
 
   private static final String VALID_URL_PATTERN = ".*/builds/id-\\d*/sources/.*";
-
   private static final Logger LOG = Logger.getLogger(DownloadSourcesController.class);
 
-  public DownloadSourcesController(@NotNull SBuildServer server, @NotNull WebControllerManager controllerManager) {
+  @NotNull private final AuthHelper myAuthHelper;
+
+  public DownloadSourcesController(@NotNull SBuildServer server,
+                                   @NotNull WebControllerManager webManager,
+                                   @NotNull AuthorizationInterceptor authInterceptor,
+                                   @NotNull AuthHelper authHelper) {
     super(server);
-    controllerManager.registerController(SymbolsConstants.APP_SOURCES + "**", this);
+    myAuthHelper = authHelper;
+    final String path = SymbolsConstants.APP_SOURCES + "**";
+    webManager.registerController(path, this);
+    authInterceptor.addPathNotRequiringAuth(path);
   }
 
   @Nullable
@@ -51,6 +61,14 @@ public class DownloadSourcesController extends BaseController {
       WebUtil.notFound(request, response, "Url is invalid", null);
       return null;
     }
+
+    final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
+      public boolean apply(SUser user) {
+        return true;
+      }
+    });
+    if (user == null) return null;
+
     String restMethodUrl = requestURI.replace("/builds/id-", "/builds/id:").replace("/app/sources/", "/app/rest/");
     final String contextPath = request.getContextPath();
     if(restMethodUrl.startsWith(contextPath)){

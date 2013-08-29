@@ -14,4 +14,6 @@
   <bean class="jetbrains.buildServer.symbols.DownloadSymbolsController"/>
   <bean class="jetbrains.buildServer.symbols.DownloadSourcesController"/>
 
+  <bean class="jetbrains.buildServer.symbols.AuthHelper"/>
+
 </beans>
