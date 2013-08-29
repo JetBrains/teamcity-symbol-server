@@ -18,13 +18,9 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
-import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationManager;
-import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationResult;
 import jetbrains.buildServer.serverSide.SBuildServer;
-import jetbrains.buildServer.serverSide.auth.Permission;
-import jetbrains.buildServer.serverSide.auth.ServerPrincipal;
 import jetbrains.buildServer.users.SUser;
-import jetbrains.buildServer.users.UserModel;
+import jetbrains.buildServer.util.Predicate;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
@@ -44,17 +40,14 @@ public class DownloadSourcesController extends BaseController {
   private static final String VALID_URL_PATTERN = ".*/builds/id-\\d*/sources/.*";
   private static final Logger LOG = Logger.getLogger(DownloadSourcesController.class);
 
-  @NotNull private final UserModel myUserModel;
-  @NotNull private final HttpAuthenticationManager myAuthManager;
+  @NotNull private final AuthHelper myAuthHelper;
 
   public DownloadSourcesController(@NotNull SBuildServer server,
                                    @NotNull WebControllerManager webManager,
                                    @NotNull AuthorizationInterceptor authInterceptor,
-                                   @NotNull UserModel userModel,
-                                   @NotNull HttpAuthenticationManager authManager) {
+                                   @NotNull AuthHelper authHelper) {
     super(server);
-    myUserModel = userModel;
-    myAuthManager = authManager;
+    myAuthHelper = authHelper;
     final String path = SymbolsConstants.APP_SOURCES + "**";
     webManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
@@ -69,26 +62,12 @@ public class DownloadSourcesController extends BaseController {
       return null;
     }
 
-    final HttpAuthenticationResult authResult = myAuthManager.processAuthenticationRequest(request, response);
-    switch (authResult.getType()) {
-      case NOT_APPLICABLE:
-        response.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "TODO"); //TODO error message
-        return null;
-      case UNAUTHENTICATED:
-        return null;
-    }
-
-    final ServerPrincipal principal = authResult.getPrincipal();
-    final SUser user = myUserModel.findUserAccount(principal.getRealm(), principal.getName());
-    if(user == null){
-      response.sendError(HttpServletResponse.SC_FORBIDDEN, "TODO"); //TODO error message
-      return null;
-    }
-
-    if (!user.isPermissionGrantedGlobally(Permission.VIEW_FILE_CONTENT)) { //TODO: check permissions locally (for particular project)
-      response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to view source files content.");
-      return null;
-    }
+    final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
+      public boolean apply(SUser user) {
+        return true;
+      }
+    });
+    if (user == null) return null;
 
     String restMethodUrl = requestURI.replace("/builds/id-", "/builds/id:").replace("/app/sources/", "/app/rest/");
     final String contextPath = request.getContextPath();

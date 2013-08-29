@@ -2,26 +2,24 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
-import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationManager;
-import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationResult;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SecurityContextEx;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.auth.Permission;
-import jetbrains.buildServer.serverSide.auth.ServerPrincipal;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
 import jetbrains.buildServer.users.SUser;
-import jetbrains.buildServer.users.UserModel;
 import jetbrains.buildServer.util.FileUtil;
+import jetbrains.buildServer.util.Predicate;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
@@ -39,23 +37,20 @@ public class DownloadSymbolsController extends BaseController {
 
   private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
 
-  @NotNull private final UserModel myUserModel;
   @NotNull private final SecurityContextEx mySecurityContext;
   @NotNull private final MetadataStorage myBuildMetadataStorage;
-  @NotNull private final HttpAuthenticationManager myAuthManager;
+  @NotNull private final AuthHelper myAuthHelper;
 
   public DownloadSymbolsController(@NotNull SBuildServer server,
                                    @NotNull WebControllerManager controllerManager,
                                    @NotNull AuthorizationInterceptor authInterceptor,
                                    @NotNull SecurityContextEx securityContext,
-                                   @NotNull HttpAuthenticationManager authManager,
-                                   @NotNull UserModel userModel,
-                                   @NotNull MetadataStorage buildMetadataStorage) {
+                                   @NotNull MetadataStorage buildMetadataStorage,
+                                   @NotNull AuthHelper authHelper) {
     super(server);
     mySecurityContext = securityContext;
-    myUserModel = userModel;
     myBuildMetadataStorage = buildMetadataStorage;
-    myAuthManager = authManager;
+    myAuthHelper = authHelper;
     final String path = SymbolsConstants.APP_SYMBOLS + "**";
     controllerManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
@@ -80,25 +75,14 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
 
-    final HttpAuthenticationResult authResult = myAuthManager.processAuthenticationRequest(request, response);
-    switch (authResult.getType()) {
-      case NOT_APPLICABLE:
-        response.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "TODO"); //TODO error message
-        return null;
-      case UNAUTHENTICATED:
-        return null;
-    }
-
-    final ServerPrincipal principal = authResult.getPrincipal();
-    final SUser user = myUserModel.findUserAccount(principal.getRealm(), principal.getName());
-    if(user == null){
-      response.sendError(HttpServletResponse.SC_FORBIDDEN, "TODO"); //TODO error message
-      return null;
-    }
-    if (!user.isPermissionGrantedGlobally(Permission.VIEW_BUILD_RUNTIME_DATA)) { //TODO: check permissions locally (for particular project)
-      response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
-      return null;
-    }
+    final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
+      public boolean apply(SUser user) {
+        //TODO: check permissions locally (for particular project)
+        //response.sendError(HttpServletResponse.SC_FORBIDDEN, "You have no permissions to download PDB files.");
+        return user.isPermissionGrantedForAnyProject(Permission.VIEW_BUILD_RUNTIME_DATA);
+      }
+    });
+    if (user == null) return null;
 
     try {
       mySecurityContext.runAs(user, new SecurityContextEx.RunAsAction() {
