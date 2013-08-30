@@ -36,8 +36,8 @@ public class SrcToolExe {
 
   private final File mySrcToolPath;
 
-  public SrcToolExe(File homeDir) {
-    mySrcToolPath = new File(homeDir, SRCTOOL_EXE);
+  public SrcToolExe(File srcSrvHomeDir) {
+    mySrcToolPath = new File(srcSrvHomeDir, SRCTOOL_EXE);
   }
 
   public Collection<File> getReferencedSourceFiles(File symbolsFile) {

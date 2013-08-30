@@ -36,8 +36,8 @@ public class PdbStrExe {
 
   private final File myPath;
 
-  public PdbStrExe(File homeDir) {
-    myPath = new File(homeDir, PDBSTR_EXE);
+  public PdbStrExe(File srcSrvHomeDir) {
+    myPath = new File(srcSrvHomeDir, PDBSTR_EXE);
   }
 
   public ExecResult doCommand(final PdbStrExeCommands cmd, final File pdbFile, final File inputStreamFile, final String streamName){

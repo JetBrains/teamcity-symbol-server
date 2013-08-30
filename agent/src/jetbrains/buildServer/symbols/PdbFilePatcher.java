@@ -6,6 +6,7 @@ import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
 import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Collection;
@@ -16,17 +17,17 @@ import java.util.Collection;
 public class PdbFilePatcher {
 
   private static final Logger LOG = Logger.getLogger(PdbFilePatcher.class);
-  private static final File TOOLS_HOME_DIR = new File("c:\\Program Files (x86)\\Windows Kits\\8.0\\Debuggers\\x64\\srcsrv\\");
 
-  private final PdbStrExe myPdbStrExe = new PdbStrExe(TOOLS_HOME_DIR);
-  private final SrcToolExe mySrcToolExe = new SrcToolExe(TOOLS_HOME_DIR);
+  private final File myWorkingDir;
+  private final SrcSrvStreamBuilder mySrcSrvStreamBuilder;
+  private final PdbStrExe myPdbStrExe;
+  private final SrcToolExe mySrcToolExe;
 
-  private final File myHomeDir;
-  private SrcSrvStreamBuilder mySrcSrvStreamBuilder;
-
-  public PdbFilePatcher(final File homeDir, final SrcSrvStreamBuilder srcSrvStreamBuilder) {
-    myHomeDir = homeDir;
+  public PdbFilePatcher(@NotNull final File workingDir, @NotNull final File srcSrvHomeDir, @NotNull final SrcSrvStreamBuilder srcSrvStreamBuilder) {
+    myWorkingDir = workingDir;
     mySrcSrvStreamBuilder = srcSrvStreamBuilder;
+    myPdbStrExe = new PdbStrExe(srcSrvHomeDir);
+    mySrcToolExe = new SrcToolExe(srcSrvHomeDir);
   }
 
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
@@ -37,7 +38,7 @@ public class PdbFilePatcher {
       LOG.debug(message);
       return;
     }
-    final File tmpFile = FileUtil.createTempFile(myHomeDir, "pdb-", ".patch", false);
+    final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
     mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
     myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
   }

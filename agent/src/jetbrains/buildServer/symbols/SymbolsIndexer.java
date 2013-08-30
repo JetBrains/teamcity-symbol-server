@@ -6,6 +6,7 @@ import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
+import jetbrains.buildServer.symbols.tools.WinDbgToolsHelper;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -81,6 +82,15 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
       return;
     }
+
+    final File srcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(myBuild);
+    if(srcSrvHomeDir == null) {
+      buildLogger.error("Failed to find Source Server tools home directory.");
+      LOG.error("Failed to find Source Server tools home directory.");
+      return;
+    }
+    buildLogger.message("Source Server tools home directory located. " + srcSrvHomeDir.getAbsolutePath());
+
     LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
     final Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
     if(pdbFiles.isEmpty()) return;
@@ -88,7 +98,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final FileUrlProvider urlProvider = FileUrlProviderFactory.getProvider(myBuild, buildLogger);
     if(urlProvider == null) return;
 
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), new SrcSrvStreamBuilder(urlProvider));
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), srcSrvHomeDir, new SrcSrvStreamBuilder(urlProvider));
     for(File pdbFile : pdbFiles){
       if(mySymbolsToProcess.contains(pdbFile)){
         LOG.debug(String.format("File %s already processed. Skipped.", pdbFile.getAbsolutePath()));
