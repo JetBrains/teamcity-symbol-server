@@ -77,6 +77,12 @@ public class DownloadSymbolsController extends BaseController {
 
     final String valuableUriPart = requestURI.substring(requestURI.indexOf(SymbolsConstants.APP_SYMBOLS) + SymbolsConstants.APP_SYMBOLS.length());
     final int firstDelimiterPosition = valuableUriPart.indexOf('/');
+
+    if(firstDelimiterPosition == -1){
+      WebUtil.notFound(request, response, "File not found", null);
+      return null;
+    }
+
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
     final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
     final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
