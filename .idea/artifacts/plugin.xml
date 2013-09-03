@@ -12,7 +12,7 @@
         <element id="archive" name="symbol-server.zip">
           <element id="file-copy" path="$PROJECT_DIR$/agent/teamcity-agent-plugin.xml" output-file-name="teamcity-plugin.xml" />
           <element id="directory" name="bin">
-            <element id="dir-copy" path="$SymbolNativeBinariesHome$" />
+            <element id="dir-copy" path="$PROJECT_DIR$/tools/JetSymbols" />
           </element>
           <element id="directory" name="lib">
             <element id="archive" name="symbols-agent.jar">
