@@ -31,8 +31,12 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
-  @Nullable private AgentRunningBuild myBuild;
-  @Nullable private Collection<File> mySymbolsToProcess;
+  @NotNull private final Collection<File> mySymbolsToProcess = new CopyOnWriteArrayList<File>();
+
+  @Nullable private BuildProgressLogger myProgressLogger;
+  @Nullable private File myBuildTempDirectory;
+  @Nullable private File mySrcSrvHomeDir;
+  @Nullable private FileUrlProvider myFileUrlProvider;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor, @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher, @NotNull final ArtifactsWatcher artifactsWatcher) {
     myArtifactsWatcher = artifactsWatcher;
@@ -41,34 +45,50 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
-        myBuild = runningBuild;
-        mySymbolsToProcess = new CopyOnWriteArrayList<File>();
+        if(runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
+          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
+          return;
+        }
+        LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled.");
+
+        myProgressLogger = runningBuild.getBuildLogger();
+        myBuildTempDirectory = runningBuild.getBuildTempDirectory();
+
+        mySrcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(runningBuild);
+        if(mySrcSrvHomeDir == null) {
+          myProgressLogger.error("Failed to find Source Server tools home directory.");
+          LOG.error("Failed to find Source Server tools home directory.");
+        }
+        else
+          myProgressLogger.message("Source Server tools home directory located. " + mySrcSrvHomeDir.getAbsolutePath());
+
+        myFileUrlProvider = FileUrlProviderFactory.getProvider(runningBuild, myProgressLogger);
       }
 
       @Override
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
-        if (myBuild == null || mySymbolsToProcess == null) return;
-        if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()) return;
-
+        if(!isIndexingApplicable()) return;
         if (mySymbolsToProcess.isEmpty()) {
-          myBuild.getBuildLogger().warning("Symbols weren't found in artifacts to be published.");
+          myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published.");
         } else {
+          myProgressLogger.message("Collecting symbol files signatures.");
+          LOG.debug("Collecting symbol files signatures.");
           try {
-            final File symbolSignaturesFile = FileUtil.createTempFile(myBuild.getBuildTempDirectory(), "symbol-signatures-", ".xml", false);
-            myJetSymbolsExe.dumpGuidsToFile(mySymbolsToProcess, symbolSignaturesFile,  myBuild.getBuildLogger());
+            final File symbolSignaturesFile = FileUtil.createTempFile(myBuildTempDirectory, "symbol-signatures-", ".xml", false);
+            myJetSymbolsExe.dumpGuidsToFile(mySymbolsToProcess, symbolSignaturesFile, myProgressLogger);
             if(symbolSignaturesFile.exists()){
+              myProgressLogger.message("Publishing collected symbol files signatures.");
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
             }
           } catch (IOException e) {
             LOG.error("Error while dumping symbols/binaries signatures.", e);
-            myBuild.getBuildLogger().error("Error while dumping symbols/binaries signatures.");
-            myBuild.getBuildLogger().exception(e);
+            myProgressLogger.error("Error while dumping symbols/binaries signatures.");
+            myProgressLogger.exception(e);
           }
         }
-        mySymbolsToProcess = null;
-        myBuild = null;
+        mySymbolsToProcess.clear();
       }
     });
   }
@@ -76,42 +96,29 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Override
   public void afterCollectingFiles(@NotNull List<ArtifactsCollection> artifacts) {
     super.afterCollectingFiles(artifacts);
-    if(myBuild == null || mySymbolsToProcess == null) return;
-    final BuildProgressLogger buildLogger = myBuild.getBuildLogger();
-    if(myBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-      LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
+    if(!isIndexingApplicable()){
+      LOG.debug("Indexing skipped.");
       return;
     }
 
-    final File srcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(myBuild);
-    if(srcSrvHomeDir == null) {
-      buildLogger.error("Failed to find Source Server tools home directory.");
-      LOG.error("Failed to find Source Server tools home directory.");
-      return;
-    }
-    buildLogger.message("Source Server tools home directory located. " + srcSrvHomeDir.getAbsolutePath());
-
-    LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled. Searching for suitable files.");
+    LOG.debug("Searching for symbol files in publishing artifacts.");
     final Collection<File> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
     if(pdbFiles.isEmpty()) return;
 
-    final FileUrlProvider urlProvider = FileUrlProviderFactory.getProvider(myBuild, buildLogger);
-    if(urlProvider == null) return;
-
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuild.getBuildTempDirectory(), srcSrvHomeDir, new SrcSrvStreamBuilder(urlProvider));
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuildTempDirectory, mySrcSrvHomeDir, new SrcSrvStreamBuilder(myFileUrlProvider));
     for(File pdbFile : pdbFiles){
       if(mySymbolsToProcess.contains(pdbFile)){
         LOG.debug(String.format("File %s already processed. Skipped.", pdbFile.getAbsolutePath()));
         continue;
       }
       try {
-        buildLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
-        pdbFilePatcher.patch(pdbFile, buildLogger);
+        myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
+        pdbFilePatcher.patch(pdbFile, myProgressLogger);
         mySymbolsToProcess.add(pdbFile);
       } catch (Throwable e) {
         LOG.error("Error occurred while patching symbols file " + pdbFile, e);
-        buildLogger.error("Error occurred while patching symbols file " + pdbFile);
-        buildLogger.exception(e);
+        myProgressLogger.error("Error occurred while patching symbols file " + pdbFile);
+        myProgressLogger.exception(e);
       }
     }
   }
@@ -126,5 +133,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       }
     }
     return result;
+  }
+
+  private boolean isIndexingApplicable() {
+    return myFileUrlProvider != null && mySrcSrvHomeDir != null;
   }
 }
