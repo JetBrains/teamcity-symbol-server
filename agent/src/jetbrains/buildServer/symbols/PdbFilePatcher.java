@@ -32,14 +32,20 @@ public class PdbFilePatcher {
 
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
     final Collection<File> sourceFiles = mySrcToolExe.getReferencedSourceFiles(symbolsFile);
+    final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
     if(sourceFiles.isEmpty()){
-      final String message = "No source information found in pdb file " + symbolsFile.getCanonicalPath();
+      final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;
       buildLogger.warning(message);
       LOG.debug(message);
       return;
     }
     final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
-    mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
+    int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
+    if(processedFilesCount == 0){
+      buildLogger.warning(String.format("Sources appeared in file %s weren't actually indexed. Looks like related binary file wasn't built during current build.", symbolsFileCanonicalPath));
+    } else {
+      buildLogger.message(String.format("Information about %d source files was updated", processedFilesCount));
+    }
     myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
   }
 }

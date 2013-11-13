@@ -20,7 +20,7 @@ public class PdbFilePatcherTest extends BaseTestCase {
   public void setUp() throws Exception {
     super.setUp();
     myTestHomeDir = createTempDir();
-    myPatcher = new PdbFilePatcher(myTestHomeDir, myTestHomeDir, new SrcSrvStreamBuilder(null));
+    myPatcher = new PdbFilePatcher(myTestHomeDir, myTestHomeDir, new SrcSrvStreamBuilder(null, null));
   }
 
   @Test

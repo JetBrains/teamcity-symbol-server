@@ -1,5 +1,7 @@
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.agent.BuildProgressLogger;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,12 +13,15 @@ import java.util.Collection;
 public class SrcSrvStreamBuilder {
 
   private final FileUrlProvider myUrlProvider;
+  private final BuildProgressLogger myProgressLogger;
 
-  public SrcSrvStreamBuilder(final FileUrlProvider urlProvider) {
+  public SrcSrvStreamBuilder(final FileUrlProvider urlProvider, BuildProgressLogger progressLogger) {
     myUrlProvider = urlProvider;
+    myProgressLogger = progressLogger;
   }
 
-  public void dumpStreamToFile(File targetFile, Collection<File> sourceFiles) throws IOException {
+  public int dumpStreamToFile(File targetFile, Collection<File> sourceFiles) throws IOException {
+    int processedFilesCount = 0;
     final FileWriter fileWriter = new FileWriter(targetFile.getPath(), true);
 
     try {
@@ -32,13 +37,22 @@ public class SrcSrvStreamBuilder {
       fileWriter.write("SRCSRVCMD=\r\n");
       fileWriter.write("SRCSRV: source files ------------------------------------------\r\n");
       for(File sourceFile : sourceFiles){
-        final String sourceFileCanonical = sourceFile.getCanonicalPath();
-        fileWriter.write(String.format("%s*%s\r\n", sourceFileCanonical, myUrlProvider.getFileUrl(sourceFileCanonical)));
+        String url = null;
+        try{
+          url = myUrlProvider.getFileUrl(sourceFile);
+        } catch (Exception ex){
+          myProgressLogger.warning("Failed to calculate url for source file " + sourceFile);
+          myProgressLogger.exception(ex);
+        }
+        if(url == null) continue;
+        processedFilesCount++;
+        fileWriter.write(String.format("%s*%s\r\n", sourceFile, url));
       }
       fileWriter.write("SRCSRV: end ------------------------------------------------");
     }
     finally {
       fileWriter.close();
     }
+    return processedFilesCount;
   }
 }

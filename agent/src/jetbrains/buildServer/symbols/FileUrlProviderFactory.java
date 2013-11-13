@@ -22,6 +22,8 @@ import jetbrains.buildServer.agent.BuildProgressLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+
 /**
  * @author Evgeniy.Koshkin
  */
@@ -32,7 +34,7 @@ public class FileUrlProviderFactory {
   public static FileUrlProvider getProvider(@NotNull AgentRunningBuild build, @NotNull BuildProgressLogger buildLogger){
     String sourceServerUrlPrefix = build.getSharedConfigParameters().get(SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
     if(sourceServerUrlPrefix == null){
-      final String message = String.format("Configuration parameter %s was not set. ", SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
+      final String message = String.format("%s configuration parameter was not set. ", SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
       LOG.warn(message);
       buildLogger.warning(message);
       return null;
@@ -41,6 +43,11 @@ public class FileUrlProviderFactory {
     buildLogger.message(message);
     LOG.debug(message);
     sourceServerUrlPrefix = sourceServerUrlPrefix.substring(0, sourceServerUrlPrefix.length() - 1); //cut last '/'
-    return new FileUrlProvider(sourceServerUrlPrefix, build.getBuildId(), build.getCheckoutDirectory());
+    try {
+      return new FileUrlProvider(sourceServerUrlPrefix, build.getBuildId(), build.getCheckoutDirectory());
+    } catch (IOException e) {
+      buildLogger.exception(e);
+      return null;
+    }
   }
 }
