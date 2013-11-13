@@ -38,7 +38,7 @@ public class SymbolsIndexerParametersPreprocessor implements BuildStartContextPr
     if(buildType == null) return;
     final Collection<SBuildFeatureDescriptor> buildFeatures = buildType.getResolvedSettings().getBuildFeatures();
     for(SBuildFeatureDescriptor buildFeature : buildFeatures){
-      if(!buildFeature.getId().equals(SymbolsConstants.BUILD_FEATURE_TYPE)) continue;
+      if(!buildFeature.getType().equals(SymbolsConstants.BUILD_FEATURE_TYPE)) continue;
       String serverOwnUrl = context.getSharedParameters().get(SymbolsConstants.SERVER_OWN_URL_PARAM_NAME);
       if(serverOwnUrl == null){
         serverOwnUrl = myRootUrlHolder.getRootUrl();
