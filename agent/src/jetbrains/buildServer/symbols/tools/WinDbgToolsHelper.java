@@ -25,7 +25,10 @@ public class WinDbgToolsHelper {
     for (String paramName : agentConfigParameters.keySet()){
       if(paramName.startsWith(DotNetConstants.WINDOWS_SDK) && paramName.endsWith(DotNetConstants.PATH)){
         final File winSdkHomeDir = new File(agentConfigParameters.get(paramName));
-        if(!winSdkHomeDir.exists()) continue;
+        if(!winSdkHomeDir.exists()) {
+          LOG.debug(String.format("Windows SDK home directory mentioned in parameter %s is not exist. Checked path %s.", paramName, winSdkHomeDir.getAbsolutePath()));
+          continue;
+        }
         File dir = new File(winSdkHomeDir, SRCSRV_HOME_DIR_RELATIVE_X64);
         if(dir.exists() && dir.isDirectory()) return dir;
         dir = new File(winSdkHomeDir, SRCSRV_HOME_DIR_RELATIVE_X86);
