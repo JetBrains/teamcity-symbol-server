@@ -34,9 +34,9 @@ public class FileUrlProviderFactory {
   public static FileUrlProvider getProvider(@NotNull AgentRunningBuild build, @NotNull BuildProgressLogger buildLogger){
     String sourceServerUrlPrefix = build.getSharedConfigParameters().get(SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
     if(sourceServerUrlPrefix == null){
-      final String message = String.format("%s configuration parameter was not set. ", SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
-      LOG.warn(message);
-      buildLogger.warning(message);
+      final String message = String.format("%s configuration parameter was not set. No symbol and source indexing will be performed.", SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME);
+      LOG.error(message);
+      buildLogger.error(message);
       return null;
     }
     final String message = String.format("Using Sources Server URL %s", sourceServerUrlPrefix);

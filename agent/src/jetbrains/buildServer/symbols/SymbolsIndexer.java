@@ -46,7 +46,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
         if(runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing performed.");
+          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed.");
           return;
         }
         LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled.");
@@ -55,12 +55,13 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
 
         mySrcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(runningBuild);
-        if(mySrcSrvHomeDir == null) {
-          myProgressLogger.error("Failed to find Source Server tools home directory.");
-          LOG.error("Failed to find Source Server tools home directory.");
+        if (mySrcSrvHomeDir == null) {
+          LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
+          myProgressLogger.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
+          return;
         }
-        else
-          myProgressLogger.message("Source Server tools home directory located. " + mySrcSrvHomeDir.getAbsolutePath());
+        LOG.debug("Source Server tools home directory located. " + mySrcSrvHomeDir.getAbsolutePath());
+        myProgressLogger.message("Source Server tools home directory located. " + mySrcSrvHomeDir.getAbsolutePath());
 
         myFileUrlProvider = FileUrlProviderFactory.getProvider(runningBuild, myProgressLogger);
       }
@@ -97,7 +98,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   public void afterCollectingFiles(@NotNull List<ArtifactsCollection> artifacts) {
     super.afterCollectingFiles(artifacts);
     if(!isIndexingApplicable()){
-      LOG.debug("Indexing skipped.");
+      LOG.debug("Symbols and sources indexing skipped.");
       return;
     }
 
