@@ -167,11 +167,17 @@ public class DownloadSymbolsController extends BaseController {
 
   @Nullable
   private String findRelatedProjectId(String symbolFileId) {
-    //TODO: log errorS
     final BuildMetadataEntry metadataEntry = getMetadataEntry(symbolFileId);
-    if(metadataEntry == null) return null;
-    final SBuild build = myServer.findBuildInstanceById(metadataEntry.getBuildId());
-    if(build == null) return null;
+    if(metadataEntry == null) {
+      LOG.debug(String.format("There is no information about symbol file with id %s in the index.", symbolFileId));
+      return null;
+    }
+    long buildId = metadataEntry.getBuildId();
+    final SBuild build = myServer.findBuildInstanceById(buildId);
+    if(build == null) {
+      LOG.debug(String.format("Failed to find build by id %d. Requested symbol file with id %s expected to be produced by that build.", buildId, symbolFileId));
+      return null;
+    }
     return build.getProjectId();
   }
 
