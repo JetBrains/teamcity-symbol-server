@@ -89,14 +89,15 @@ public class DownloadSymbolsController extends BaseController {
     final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
+    final String projectId = findRelatedProjectId(guid);
+    if(projectId == null) {
+      WebUtil.notFound(request, response, "File not found", null);
+      return null;
+    }
+
     final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
       public boolean apply(SUser user) {
         try{
-          final String projectId = findRelatedProjectId(guid);
-          if(projectId == null) {
-            WebUtil.notFound(request, response, "File not found", null);
-            return false;
-          }
           boolean hasPermissions = user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
           if(!hasPermissions) response.sendError(HttpServletResponse.SC_FORBIDDEN, String.format("You have no access to PDB files in the project with id %s.", projectId));
           return hasPermissions;
@@ -148,6 +149,10 @@ public class DownloadSymbolsController extends BaseController {
     final Map<String,String> metadata = entry.getMetadata();
     final String storedFileName = metadata.get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
     final String artifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
+    if(storedFileName == null || artifactPath == null){
+      LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", guid));
+      return null;
+    }
     if(!storedFileName.equals(fileName)){
       LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
       return null;
