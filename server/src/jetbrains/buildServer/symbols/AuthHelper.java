@@ -39,10 +39,10 @@ public class AuthHelper {
       final SUser guestUser = myUserModel.getGuestUser();
       if(hasPermissions.apply(guestUser)) return guestUser;
     }
-    final HttpAuthenticationResult authResult = myAuthManager.processAuthenticationRequest(request, response);
+    final HttpAuthenticationResult authResult = myAuthManager.processAuthenticationRequest(request, response, false);
     switch (authResult.getType()) {
       case NOT_APPLICABLE:
-        myAuthManager.processUnauthenticatedRequest(request, response);
+        myAuthManager.processUnauthenticatedRequest(request, response, "", false);
         return null;
       case UNAUTHENTICATED:
         return null;
