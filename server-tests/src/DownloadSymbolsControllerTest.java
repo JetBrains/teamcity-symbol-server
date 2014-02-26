@@ -66,6 +66,13 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
   }
 
   @Test
+  public void request_pdb_two_slashes_in_url() throws Exception {
+    myRequest.setRequestURI("mock", "/app/symbols//index2.txt'");
+    doGet();
+    assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
+  }
+
+  @Test
   public void request_pdb_invalid_url() throws Exception {
     myRequest.setRequestURI("mock", "/app/symbols/foo");
     doGet();

@@ -60,7 +60,7 @@ public class DownloadSymbolsController extends BaseController {
   @Nullable
   @Override
   protected ModelAndView doHandle(final @NotNull HttpServletRequest request, final @NotNull HttpServletResponse response) throws Exception {
-    final String requestURI = request.getRequestURI();
+    final String requestURI = request.getRequestURI().replace("//", "/");
 
     if(requestURI.endsWith(SymbolsConstants.APP_SYMBOLS)){
       response.sendError(HttpServletResponse.SC_OK, "TeamCity Symbol Server available");
