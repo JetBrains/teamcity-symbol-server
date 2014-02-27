@@ -2,7 +2,6 @@
   <library name="Common-Api">
     <CLASSES>
       <root url="jar://$teamcitydistribution$/devPackage/common-api.jar!/" />
-      <root url="jar://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib/annotations.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
