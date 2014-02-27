@@ -1,4 +1,18 @@
-package jetbrains.buildServer.symbols;
+package jetbrains.buildServer.symbols;/*
+ * Copyright 2000-2013 JetBrains s.r.o.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
@@ -47,6 +61,13 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     myRequest.setRequestURI("mock", getRegisterPdbUrl("secur32.pdb", "8EF4E863187C45E78F4632152CC82FEB"));
     doGet();
     assertEquals(HttpStatus.SC_OK, myResponse.getStatus());
+  }
+
+  @Test
+  public void request_pdb_two_slashes_in_url() throws Exception {
+    myRequest.setRequestURI("mock", "/app/symbols//index2.txt'");
+    doGet();
+    assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
   }
 
   @Test
