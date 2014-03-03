@@ -29,7 +29,7 @@ public class JetSymbolsExeTest extends BaseTestCase implements BuildProgressLogg
   public void setUp() throws Exception {
     super.setUp();
     File homeDir = new File("tools\\JetSymbols").getAbsoluteFile();
-    assertTrue(homeDir.isDirectory());
+    assertTrue("Failed to find JetSymbolsExe home dir on path " + homeDir.getAbsolutePath(), homeDir.isDirectory());
     myExe = new JetSymbolsExe(homeDir);
   }
 
