@@ -4,7 +4,13 @@
       <root url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" />
+    </SOURCES>
     <jarDirectory url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" recursive="false" />
+    <jarDirectory url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" recursive="false" />
+    <jarDirectory url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" recursive="false" />
+    <jarDirectory url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" recursive="false" type="SOURCES" />
+    <jarDirectory url="file://$teamcitydistribution$/webapps/ROOT/WEB-INF/lib" recursive="false" type="SOURCES" />
   </library>
 </component>
