@@ -79,6 +79,7 @@ public class AuthHelper {
       return user;
     }
     LOG.warn(String.format("Located user (name %s) has NO permissions to process the request.", name));
+    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
     return null;
   }
 }

@@ -23,7 +23,6 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
@@ -97,14 +96,7 @@ public class DownloadSymbolsController extends BaseController {
 
     final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
       public boolean apply(SUser user) {
-        try{
-          boolean hasPermissions = user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
-          if(!hasPermissions) response.sendError(HttpServletResponse.SC_FORBIDDEN, String.format("You have no access to PDB files in the project with id %s.", projectId));
-          return hasPermissions;
-        } catch (IOException e) {
-          LOG.debug(e);
-          return false;
-        }
+        return user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
       }
     });
     if (user == null) return null;
