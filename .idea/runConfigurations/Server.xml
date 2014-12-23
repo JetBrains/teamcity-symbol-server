@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 7" ALTERNATIVE_JRE_ENABLED="false">
+  <configuration default="false" name="Server" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat TC 8.1.x" ALTERNATIVE_JRE_ENABLED="false" ALTERNATIVE_JRE_PATH="">
     <option name="OPEN_IN_BROWSER" value="false" />
     <option name="OPEN_IN_BROWSER_URL" value="http://localhost:8111" />
-    <option name="COMMON_VM_ARGUMENTS" value="-ea -Xmx384m -XX:MaxPermSize=200m -Ddebug=true -server -XX:+HeapDumpOnOutOfMemoryError -Djava.awt.headless -DTC.res.disableAll=true -Dteamcity.development.mode=true -Dteamcity.development.shadowCopyClasses=true -Dteamcity.data.path=$teamcitydistribution$/../PluginDev.Data -Dteamcity_logs=$teamcitydistribution$/logs -Dlog4j.configuration=file:$teamcitydistribution$/conf/teamcity-server-log4j.xml" />
+    <option name="COMMON_VM_ARGUMENTS" value="-ea -Xmx384m -XX:MaxPermSize=200m -Ddebug=true -server -XX:+HeapDumpOnOutOfMemoryError -Djava.awt.headless -DTC.res.disableAll=true -Dteamcity.development.mode=true -Dteamcity.development.shadowCopyClasses=true -Dteamcity.data.path=%IDEA_RUN:TOMCAT_HOME%/../PluginDev.Data -Dteamcity_logs=%IDEA_RUN:TOMCAT_HOME%/logs -Dlog4j.configuration=file:%IDEA_RUN:TOMCAT_HOME%/conf/teamcity-server-log4j.xml" />
     <option name="UPDATING_POLICY" value="restart-server" />
     <deployment>
-      <file path="C:/Program Files/Java/jdk1.7.0_21/jre/bin/$teamcitydistribution$/webapps/ROOT">
+      <file path="%IDEA_RUN:TOMCAT_HOME%/webapps/ROOT">
         <settings>
           <option name="CONTEXT_PATH" value="/bs" />
         </settings>
