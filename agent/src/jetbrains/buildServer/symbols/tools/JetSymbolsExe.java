@@ -23,23 +23,26 @@ public class JetSymbolsExe {
     myExePath = new File(homeDir, SYMBOLS_EXE);
   }
 
-  public void dumpGuidsToFile(Collection<File> files, File output, BuildProgressLogger buildLogger) throws IOException {
+  public int dumpGuidsToFile(Collection<File> files, File output, BuildProgressLogger buildLogger) throws IOException {
     final GeneralCommandLine commandLine = new GeneralCommandLine();
     commandLine.setExePath(myExePath.getPath());
     commandLine.addParameter(DUMP_SYMBOL_SIGN_CMD);
-    commandLine.addParameter(String.format("/o=\"%s\"", output.getPath()));
-    commandLine.addParameter(String.format("/i=\"%s\"", dumpPathsToFile(files).getPath()));
+    commandLine.addParameter(String.format("/o=%s", output.getPath()));
+    commandLine.addParameter(String.format("/i=%s", dumpPathsToFile(files).getPath()));
     buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
     final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
     final String stdout = execResult.getStdout();
     if(!stdout.isEmpty()){
       buildLogger.message("Stdout: " + stdout);
     }
-    if (execResult.getExitCode() == 0) return;
-    buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
-    buildLogger.warning("Stdout: " + stdout);
-    buildLogger.warning("Stderr: " + execResult.getStderr());
-    buildLogger.exception(execResult.getException());
+    final int exitCode = execResult.getExitCode();
+    if (exitCode != 0) {
+      buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
+      buildLogger.warning("Stdout: " + stdout);
+      buildLogger.warning("Stderr: " + execResult.getStderr());
+      buildLogger.exception(execResult.getException());
+    }
+    return exitCode;
   }
 
   private File dumpPathsToFile(Collection<File> files) throws IOException {
