@@ -15,9 +15,9 @@ import java.util.Map;
 /**
  * @author Evgeniy.Koshkin
  */
-public class WinDbgToolsHelper {
+public class WinDbgToolsDetector {
 
-  private static final Logger LOG = Logger.getLogger(WinDbgToolsHelper.class);
+  private static final Logger LOG = Logger.getLogger(WinDbgToolsDetector.class);
 
   private static final String SRCSRV_HOME_DIR_RELATIVE_X64 = "\\Debuggers\\x64\\srcsrv\\";
   private static final String SRCSRV_HOME_DIR_RELATIVE_X86 = "\\Debuggers\\x86\\srcsrv\\";

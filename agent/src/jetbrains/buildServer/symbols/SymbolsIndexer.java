@@ -6,7 +6,7 @@ import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
-import jetbrains.buildServer.symbols.tools.WinDbgToolsHelper;
+import jetbrains.buildServer.symbols.tools.WinDbgToolsDetector;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -54,7 +54,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
 
-        mySrcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(runningBuild);
+        mySrcSrvHomeDir = WinDbgToolsDetector.getSrcSrvHomeDir(runningBuild);
         if (mySrcSrvHomeDir == null) {
           LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
           myProgressLogger.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
