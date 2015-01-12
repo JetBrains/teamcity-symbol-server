@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileFilter;
 
 import static jetbrains.buildServer.util.Bitness.BIT32;
 import static jetbrains.buildServer.util.Win32RegistryAccessor.Hive.LOCAL_MACHINE;
@@ -31,6 +32,7 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
   private static final String WIN_DBG_HOME_DIR_RELATIVE_SDK8 = "\\Debuggers";
 
   public static final String WIN_DBG_PATH = "WinDbg" + DotNetConstants.PATH;
+  private static final String DEBUGGING_TOOLS_FOR_WINDOWS = "Debugging Tools for Windows";
 
   @NotNull private final Win32RegistryAccessor myRegistryAccessor;
 
@@ -46,14 +48,14 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
     if (!config.getSystemInfo().isWindows()) return;
     LOG.info("Searching WinDbg installation...");
 
-    LOG.debug("Searching the WinDbg as part of Windows 8.1 SDK");
+    LOG.info("Searching the WinDbg as part of Windows 8.1 SDK");
     File winDbgHomeDir = searchSDK8x(WIN_DBG_81_ROOT_ENTRY_NAME, WIN_SDK_81_ROOT_ENTRY_NAME, "8.1");
     if(winDbgHomeDir == null) {
-      LOG.debug("Searching the WinDbg as part of Windows 8 SDK");
-      searchSDK8x(WIN_DBG_8_ROOT_ENTRY_NAME, WIN_SDK_8_ROOT_ENTRY_NAME, "8");
+      LOG.info("Searching the WinDbg as part of Windows 8 SDK");
+      winDbgHomeDir = searchSDK8x(WIN_DBG_8_ROOT_ENTRY_NAME, WIN_SDK_8_ROOT_ENTRY_NAME, "8");
     } if(winDbgHomeDir == null) {
-      LOG.debug("Searching the WinDbg as part of Windows 7 SDK");
-      searchSDK7x();
+      LOG.info("Searching the WinDbg as part of Windows 7 SDK");
+      winDbgHomeDir = searchSDK7x();
     }
 
     if(winDbgHomeDir == null) LOG.info("WinDbg tools were not found on this machine.");
@@ -82,7 +84,48 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
 
   @Nullable
   private File searchSDK7x() {
-    //sdk 7, 71 - no info in registry, check for file system path under %PROGRAMFILES(x86)% or %PROGRAMFILES%
+    final String systemDrive = ensureSuffix(getEnv("SYSTEMDRIVE", "C:"), ":").toUpperCase();
+    final File programFilesDir = new File(systemDrive, "Program Files");
+    final File programFilesX86Dir = new File(systemDrive, "Program Files (x86)");
+    if(!programFilesDir.isDirectory() && !programFilesX86Dir.isDirectory()){
+      LOG.debug(String.format("Failed to locate 'Program Files' directory on the machine. Checked paths: %s, %s", programFilesDir, programFilesX86Dir));
+      return null;
+    }
+    File winDbgHome = findWinDbgHomeInDirectory(programFilesDir);
+    if(winDbgHome == null){
+      winDbgHome = findWinDbgHomeInDirectory(programFilesX86Dir);
+    }
+    return winDbgHome;
+  }
+
+  @Nullable
+  private File findWinDbgHomeInDirectory(File directory) {
+    if (!directory.isDirectory()) return null;
+
+    final String directoryAbsolutePath = directory.getAbsolutePath();
+    LOG.info("Searching for WinDbg home under " + directoryAbsolutePath);
+
+    final File[] matches = directory.listFiles(new FileFilter() {
+      public boolean accept(File pathname) {
+        return pathname.isDirectory() && pathname.getName().startsWith(DEBUGGING_TOOLS_FOR_WINDOWS);
+      }
+    });
+
+    if (matches == null || matches.length == 0) LOG.info("WinDbg home was NOT found under " + directoryAbsolutePath);
+    else return matches[0];
     return null;
+  }
+
+  @NotNull
+  private static String ensureSuffix(final @NotNull String string, final @NotNull String suffix) {
+    int n = string.length(),
+            m = suffix.length();
+    return n >= m && string.endsWith(suffix) ? string : string + suffix;
+  }
+
+  @NotNull
+  private static String getEnv(final @NotNull String variableName, final @NotNull String defaultValue) {
+    String value = System.getenv(variableName);
+    return value != null ? value : defaultValue;
   }
 }
