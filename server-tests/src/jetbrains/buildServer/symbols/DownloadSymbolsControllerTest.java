@@ -59,8 +59,11 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
 
     myRequest.setRequestURI("mock", getRegisterPdbUrl("secur32.pdb", "8EF4E863187C45E78F4632152CC82FEB"));
+
     doGet();
-    assertEquals(HttpStatus.SC_OK, myResponse.getStatus());
+
+    assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
+    assertEquals("Symbol file not found", myResponse.getStatusText());
   }
 
   @Test
@@ -107,17 +110,23 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
 
     final File artDirectory = createTempDir();
-    new File(artDirectory, "foo").createNewFile();
+    assertTrue(new File(artDirectory, "foo").createNewFile());;
+
     myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
     RunningBuildEx build = startBuild();
+    finishBuild(build, false);
 
     final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
     final String fileName = "secur32.pdb";
-    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, fileSignature);
 
-    myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature.toLowerCase(), fileName));
+    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, guid.toLowerCase());
+    myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName));
+
     doGet();
-    assertEquals(HttpStatus.SC_OK, myResponse.getStatus());
+
+    assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
+    assertEquals("Symbol file not found", myResponse.getStatusText());
   }
 
   private String getRegisterPdbUrl(String fileName, String fileSignature) throws IOException {
@@ -125,7 +134,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     new File(artDirectory, "foo").createNewFile();
     myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
     RunningBuildEx build = startBuild();
-    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, fileSignature);
+    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, fileSignature.substring(0, fileSignature.length() - 1).toLowerCase());
     return String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName);
   }
 }
