@@ -85,7 +85,7 @@ public class DownloadSymbolsController extends BaseController {
 
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
     final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
+    final String guid = signature.substring(0, signature.length() - 1).toLowerCase(); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final String projectId = findRelatedProjectId(guid);

@@ -99,6 +99,27 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
   }
 
+  @Test
+  public void request_pdb_guid_toLowerCase() throws Exception{
+    myFixture.getServerSettings().setPerProjectPermissionsEnabled(true);
+    SUser user = myFixture.getUserModel().getGuestUser();
+    user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
+    assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
+
+    final File artDirectory = createTempDir();
+    new File(artDirectory, "foo").createNewFile();
+    myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
+    RunningBuildEx build = startBuild();
+
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String fileName = "secur32.pdb";
+    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, fileSignature);
+
+    myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature.toLowerCase(), fileName));
+    doGet();
+    assertEquals(HttpStatus.SC_OK, myResponse.getStatus());
+  }
+
   private String getRegisterPdbUrl(String fileName, String fileSignature) throws IOException {
     final File artDirectory = createTempDir();
     new File(artDirectory, "foo").createNewFile();

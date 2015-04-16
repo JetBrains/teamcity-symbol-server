@@ -83,7 +83,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   }
 
   private String extractGuid(String sign) {
-    return sign.substring(0, sign.length() - 1); //last symbol is PEDebugType
+    return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
   }
 
   private String locateArtifact(SBuild build, final String fileName) {
