@@ -2,6 +2,9 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
+import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
+import jetbrains.buildServer.serverSide.metadata.impl.MetadataStorageException;
+import jetbrains.buildServer.util.Action;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -36,6 +39,10 @@ class MetadataStorageMock implements MetadataStorage {
     return myEntries.iterator();
   }
 
+  public int getNumberOfEntries(@NotNull String s) {
+    return 0;
+  }
+
   @NotNull
   public Iterator<BuildMetadataEntry> getEntriesByKey(@NotNull String s, @NotNull String s2) {
     return myEntries.iterator();
@@ -43,6 +50,15 @@ class MetadataStorageMock implements MetadataStorage {
 
   @NotNull
   public Iterator<BuildMetadataEntry> getBuildEntry(long l, @NotNull String s) {
+    return myEntries.iterator();
+  }
+
+  public boolean updateCache(long l, boolean b, @NotNull String s, @NotNull Action<MetadataStorageWriter> action) throws MetadataStorageException {
+    return false;
+  }
+
+  @NotNull
+  public Iterator<BuildMetadataEntry> findEntriesWithValue(@NotNull String s, @NotNull String s1, Collection<String> collection) {
     return myEntries.iterator();
   }
 }
