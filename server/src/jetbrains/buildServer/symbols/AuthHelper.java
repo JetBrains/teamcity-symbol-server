@@ -3,7 +3,7 @@ package jetbrains.buildServer.symbols;
 import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationManager;
 import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationResult;
 import jetbrains.buildServer.serverSide.auth.ServerPrincipal;
-import jetbrains.buildServer.serverSide.impl.ServerSettings;
+import jetbrains.buildServer.serverSide.ServerSettings;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.users.UserModel;
 import jetbrains.buildServer.util.Predicate;
