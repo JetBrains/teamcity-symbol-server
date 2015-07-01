@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
   <artifact name="deploy">
-    <output-path>$TeamcityDistribution/../PluginDev.Data/plugins</output-path>
+    <output-path>$TeamCityDistribution/../PluginDev.Data/plugins</output-path>
     <properties id="ant-postprocessing">
       <options enabled="true">
         <file>file://$PROJECT_DIR$/build/ant.build.xml</file>
