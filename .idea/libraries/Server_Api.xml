@@ -1,11 +1,11 @@
 <component name="libraryTable">
   <library name="Server-Api">
     <CLASSES>
-      <root url="jar://$teamcitydistribution$/devPackage/server-api.jar!/" />
+      <root url="jar://$TeamcityDistribution$/devPackage/server-api.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="jar://$teamcitydistribution$/devPackage/src/openApi-source.jar!/" />
+      <root url="jar://$TeamcityDistribution$/devPackage/src/openApi-source.jar!/" />
     </SOURCES>
   </library>
 </component>
