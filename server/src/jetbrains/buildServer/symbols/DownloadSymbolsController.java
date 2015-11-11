@@ -145,7 +145,7 @@ public class DownloadSymbolsController extends BaseController {
       LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", guid));
       return null;
     }
-    if(!storedFileName.equals(fileName)){
+    if(!storedFileName.equalsIgnoreCase(fileName)){
       LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
       return null;
     }
