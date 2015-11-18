@@ -6,6 +6,8 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataProvider;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
+import jetbrains.buildServer.util.CollectionsUtil;
+import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.Logger;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -38,48 +40,51 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
   public void generateMedatadata(@NotNull SBuild sBuild, @NotNull MetadataStorageWriter metadataStorageWriter) {
     final long buildId = sBuild.getBuildId();
+
     final BuildArtifact symbols = sBuild.getArtifacts(BuildArtifactsViewMode.VIEW_HIDDEN_ONLY).getArtifact(".teamcity/symbols");
-    if(symbols == null){
+    final BuildArtifact symbolSignaturesSource = symbols == null ? null : CollectionsUtil.findFirst(symbols.getChildren(), new Filter<BuildArtifact>() {
+      public boolean accept(@NotNull BuildArtifact data) {
+        return data.getName().startsWith("symbol-signatures");
+      }
+    });
+    if(symbolSignaturesSource == null) {
       LOG.debug("Build with id " + buildId + " doesn't provide symbols index data.");
       return;
     }
-    for(BuildArtifact childArtifact : symbols.getChildren()){
-      if (!childArtifact.getName().startsWith("symbol-signatures")) continue;
-      Map<String, String> indexData = Collections.emptyMap();
-      try {
-        indexData = readIndex(childArtifact.getInputStream());
-      } catch (IOException e) {
-        LOG.debug("Failed to read symbols index data from artifact " + childArtifact.getRelativePath(), e);
+
+    Map<String, String> indexData = Collections.emptyMap();
+    try {
+      indexData = readIndex(symbolSignaturesSource.getInputStream());
+    } catch (IOException e) {
+      LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
+    } catch (JDOMException e) {
+      LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
+    }
+    for (String signature : indexData.keySet()) {
+      final String fileName = indexData.get(signature);
+      final String artifactPath = locateArtifact(sBuild, fileName);
+      if (artifactPath == null) {
+        LOG.debug(String.format("Failed to find artifact by name. BuildId - %d. Artifact name - %s.", buildId, fileName));
+        continue;
       }
-      for (String sign : indexData.keySet()){
-        final String fileName = indexData.get(sign);
-        final String artifactPath = locateArtifact(sBuild, fileName);
-        if(artifactPath == null){
-          LOG.debug(String.format("Failed to find artifact by name. BuildId - %d. Artifact name - %s.", buildId, fileName));
-          continue;
-        }
-        final HashMap<String, String> data = new HashMap<String, String>();
-        data.put(ARTIFACT_PATH_KEY, artifactPath);
-        data.put(FILE_NAME_KEY, fileName);
-        metadataStorageWriter.addParameters(sign, data);
-      }
+      final HashMap<String, String> data = new HashMap<String, String>();
+      data.put(ARTIFACT_PATH_KEY, artifactPath);
+      data.put(FILE_NAME_KEY, fileName);
+      metadataStorageWriter.addParameters(signature, data);
+      LOG.debug("Information about symbol file signature " + signature + " was stored to index.");
     }
   }
 
-  private Map<String, String> readIndex(InputStream inputStream) throws IOException {
+  @NotNull
+  private Map<String, String> readIndex(InputStream inputStream) throws JDOMException, IOException {
     SAXBuilder builder = new SAXBuilder();
-    try {
-      Document document = builder.build(inputStream);
-      Map<String, String> result = new HashMap<String, String>();
-      for (Object signElementObject : document.getRootElement().getChildren()){
-        final Element signElement = (Element) signElementObject;
-        result.put(extractGuid(signElement.getAttributeValue("sign")), signElement.getAttributeValue("file"));
-      }
-      return result;
-    } catch (JDOMException e) {
-      LOG.debug(e);
-      return null;
+    Document document = builder.build(inputStream);
+    Map<String, String> result = new HashMap<String, String>();
+    for (Object signElementObject : document.getRootElement().getChildren()){
+      final Element signElement = (Element) signElementObject;
+      result.put(extractGuid(signElement.getAttributeValue("sign")), signElement.getAttributeValue("file"));
     }
+    return result;
   }
 
   private String extractGuid(String sign) {
