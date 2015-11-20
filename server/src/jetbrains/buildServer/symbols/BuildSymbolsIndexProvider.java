@@ -60,6 +60,9 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
     } catch (JDOMException e) {
       LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
     }
+
+    LOG.debug(String.format("Build with id %d provides %d symbol file signatures.", buildId, indexData.size()));
+
     for (String signature : indexData.keySet()) {
       final String fileName = indexData.get(signature);
       final String artifactPath = locateArtifact(sBuild, fileName);
@@ -71,7 +74,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
       data.put(ARTIFACT_PATH_KEY, artifactPath);
       data.put(FILE_NAME_KEY, fileName);
       metadataStorageWriter.addParameters(signature, data);
-      LOG.debug("Information about symbol file signature " + signature + " was stored to index.");
+      LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName);
     }
   }
 
