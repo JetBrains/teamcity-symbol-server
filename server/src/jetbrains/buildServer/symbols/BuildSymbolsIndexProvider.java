@@ -67,14 +67,14 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
       final String fileName = indexData.get(signature);
       final String artifactPath = locateArtifact(sBuild, fileName);
       if (artifactPath == null) {
-        LOG.debug(String.format("Failed to find artifact by name. BuildId - %d. Artifact name - %s.", buildId, fileName));
+        LOG.debug(String.format("Failed to find artifact by name %s and build id %d.", fileName, buildId));
         continue;
       }
       final HashMap<String, String> data = new HashMap<String, String>();
       data.put(ARTIFACT_PATH_KEY, artifactPath);
       data.put(FILE_NAME_KEY, fileName);
       metadataStorageWriter.addParameters(signature, data);
-      LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName);
+      LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName + " build id " + buildId);
     }
   }
 
