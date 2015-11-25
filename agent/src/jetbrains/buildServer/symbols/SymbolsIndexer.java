@@ -47,18 +47,19 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
+        final long buildId = runningBuild.getBuildId();
         if(runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed.");
+          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed for build with id " + buildId);
           return;
         }
-        LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled.");
+        LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled for build with id " + buildId);
 
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
 
         mySrcSrvHomeDir = getSrcSrvHomeDir(runningBuild);
         if (mySrcSrvHomeDir == null) {
-          LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
+          LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed for build with id " + buildId);
           myProgressLogger.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
           return;
         }
@@ -74,7 +75,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         if(!isIndexingApplicable()) return;
         if (mySymbolsToProcess.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
-          LOG.debug("Symbols weren't found in artifacts to be published.");
+          LOG.debug("Symbols weren't found in artifacts to be published for build with id " + build.getBuildId());
         } else {
           myProgressLogger.message("Collecting symbol files signatures.");
           LOG.debug("Collecting symbol files signatures.");
@@ -86,7 +87,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
             }
           } catch (IOException e) {
-            LOG.error("Error while dumping symbols/binaries signatures.", e);
+            LOG.error("Error while dumping symbols/binaries signatures for build with id " + build.getBuildId(), e);
             myProgressLogger.error("Error while dumping symbols/binaries signatures.");
             myProgressLogger.exception(e);
           }
