@@ -5,8 +5,8 @@
       <configuration>
         <fileset id="fileset1" name="agent" removed="false">
           <file>file://$MODULE_DIR$/src/META-INF/build-agent-plugin-symbol-server.xml</file>
-          <file>jar://$teamcitydistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentSpring.xml</file>
-          <file>jar://$teamcitydistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentPlugins.xml</file>
+          <file>jar://$TeamCityDistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentSpring.xml</file>
+          <file>jar://$TeamCityDistribution$/buildAgent/lib/agent.jar!/META-INF/buildAgentPlugins.xml</file>
           <file>file://$MODULE_DIR$/fake-teamcity-agent-plugin-context.xml</file>
         </fileset>
       </configuration>
@@ -20,6 +20,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Agent-Api" level="project" />
+    <orderEntry type="library" name="idea annotations.jar" level="project" />
     <orderEntry type="library" name="Common-Api" level="project" />
     <orderEntry type="library" name="log4j" level="project" />
     <orderEntry type="library" name="Idea-OpenApi" level="project" />

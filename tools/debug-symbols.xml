@@ -1,0 +1,426 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<!DOCTYPE log4j:configuration SYSTEM "./log4j.dtd">
+
+<log4j:configuration>
+  <appender name="CONSOLE-WARN" class="org.apache.log4j.ConsoleAppender">
+    <param name="target" value="System.err"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+    <filter class="jetbrains.buildServer.util.SpringErrorsFilter">
+      <param name="LevelMin" value="WARN"/>
+    </filter>
+  </appender>
+
+  <appender name="CONSOLE-ERROR" class="org.apache.log4j.ConsoleAppender">
+    <param name="target" value="System.err"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+    <filter class="jetbrains.buildServer.util.SpringErrorsFilter">
+      <param name="LevelMin" value="ERROR"/>
+    </filter>
+  </appender>
+
+  <appender name="ROLL" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-server.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="javasvn.output"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.plugins.spring.SpringPluginLoader$TeamCityPlugin*"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.vcs.impl.VcsContentCache"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.LDAP"/>
+      <param name="MaxDenyLevel" value="DEBUG"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.maintenance.WebDispatcherServlet"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.CLEANUP"/>
+      <param name="MaxDenyLevel" value="DEBUG"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.AUTH"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.nuget.*"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+    <filter class="jetbrains.buildServer.log.CategoryFilter">
+      <param name="DenyCategory" value="jetbrains.buildServer.symbols.*"/>
+      <param name="MaxDenyLevel" value="INFO"/>
+    </filter>
+  </appender>
+
+  <appender name="ROLL.VCS" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-vcs.log"/>
+    <param name="maxBackupIndex" value="3"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%15.15t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="ROOL.VCS.REMOTE.RUN" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-remote-run.log"/>
+    <param name="maxBackupIndex" value="5"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%15.15t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="ROLL.WS" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-ws.log"/>
+    <param name="maxBackupIndex" value="3"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%15.15t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="ACTIVITIES.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-activities.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="CLOUDS.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-clouds.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%15.15t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="SQL.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-sql.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="CLEANUP.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-cleanup.log"/>
+    <param name="maxBackupIndex" value="3"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="SVN.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-svn.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="TFS.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-tfs.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="STARTEAM.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-starteam.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="CLEARCASE.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-clearcase.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="AUTH.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-auth.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%30.30t] - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="SYMBOLS.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-symbolserver.log"/>
+    <param name="maxBackupIndex" value="10"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%30.30t] - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="AGENT_STATISTICS.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-agent-statistics.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="XMLRPC.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-xmlrpc.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="LDAP.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-ldap.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="VCS-CONTENT-CACHE" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}vcs-content-cache.log"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] [%t] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="REST.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-rest.log"/>
+
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p [%15.15t] - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="FREEMARKER.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-freemarker.log"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="NOTIFICATIONS.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-notifications.log"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="AGENTPUSH.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-agentPush.log"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="NUGET.LOG" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-nuget.log"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <appender name="ROLL.VERSIONED_SETTINGS" class="jetbrains.buildServer.util.TCRollingFileAppender">
+    <param name="file" value="${teamcity_logs}teamcity-versioned-settings.log"/>
+    <param name="maxBackupIndex" value="3"/>
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="[%d] %6p - %30.30c - %m %n"/>
+    </layout>
+  </appender>
+
+  <!-- categories -->
+
+  <category name="jetbrains.buildServer.symbols" additivity="false">
+    <priority value="DEBUG"/>
+    <appender-ref ref="ROLL"/>
+    <appender-ref ref="SYMBOLS.LOG"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.nuget" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="NUGET.LOG"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+    <appender-ref ref="ROLL"/>
+  </category>
+
+  <category name="jetbrains.buildServer.agentpush" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="AGENTPUSH.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.AUTH" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL"/>
+    <appender-ref ref="AUTH.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.buildTriggers.vcs.clearcase" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="CLEARCASE.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.buildTriggers.vcs.starteam" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="STARTEAM.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.buildTriggers.vcs.tfs" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="TFS.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.XMLRPC" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="XMLRPC.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.AGENTSSTATISTICS" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="AGENT_STATISTICS.LOG"/>
+  </category>
+
+  <category name="javasvn.output" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="SVN.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.SQL" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="SQL.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.CLEANUP" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL"/>
+    <appender-ref ref="CLEANUP.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.LDAP" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="LDAP.LOG"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.vcs.impl.VcsContentCache" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="VCS-CONTENT-CACHE"/>
+  </category>
+
+  <category name="jetbrains.buildServer.server.rest" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="REST.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.clouds.jetbrains.buildServer.serverSide.impl.FlushQueueVirtualAction" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="CLOUDS.LOG"/>
+  </category>
+
+  <category name="com.xerox.amazonws" additivity="false">
+    <priority value="ERROR"/>
+    <appender-ref ref="CLOUDS.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.clouds" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="CLOUDS.LOG"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.ACTIVITIES">
+    <priority value="INFO"/>
+    <appender-ref ref="ACTIVITIES.LOG"/>
+  </category>
+
+  <category name="jetbrains.buildServer.VCS" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.VCS"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.buildTriggers.vcs" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.VCS"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.buildTriggers.vcs.remoteRun" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROOL.VCS.REMOTE.RUN"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="jetbrains.buildServer.notification" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="NOTIFICATIONS.LOG"/>
+    <appender-ref ref="CONSOLE-ERROR"/>
+  </category>
+
+  <category name="freemarker.runtime" additivity="false">
+    <priority value="OFF"/>
+    <appender-ref ref="FREEMARKER.LOG"/>
+  </category>
+
+  <category name="org.atmosphere" additivity="false" >
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.WS"/>
+  </category>
+
+  <category name="jetbrains.buildServer.WEBSOCKET" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.WS"/>
+  </category>
+
+  <category name="net.sf.packtag.implementation.yui.JavaScriptErrorReporter">
+    <priority value="OFF"/>
+  </category>
+
+  <category name="jetbrains.buildServer.VERSIONED_SETTINGS" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.VERSIONED_SETTINGS"/>
+  </category>
+
+  <category name="jetbrains.buildServer.serverSide.impl.versionedSettings" additivity="false">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL.VERSIONED_SETTINGS"/>
+  </category>
+
+  <category name="jetbrains.buildServer">
+    <priority value="INFO"/>
+    <appender-ref ref="ROLL"/>
+  </category>
+
+  <root>
+    <priority value="INFO"/>
+    <appender-ref ref="CONSOLE-WARN"/>
+  </root>
+
+</log4j:configuration>

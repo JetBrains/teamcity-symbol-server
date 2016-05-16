@@ -23,7 +23,6 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
@@ -86,7 +85,7 @@ public class DownloadSymbolsController extends BaseController {
 
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
     final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
+    final String guid = signature.substring(0, signature.length() - 1).toLowerCase(); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final String projectId = findRelatedProjectId(guid);
@@ -97,14 +96,7 @@ public class DownloadSymbolsController extends BaseController {
 
     final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
       public boolean apply(SUser user) {
-        try{
-          boolean hasPermissions = user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
-          if(!hasPermissions) response.sendError(HttpServletResponse.SC_FORBIDDEN, String.format("You have no access to PDB files in the project with id %s.", projectId));
-          return hasPermissions;
-        } catch (IOException e) {
-          LOG.debug(e);
-          return false;
-        }
+        return user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
       }
     });
     if (user == null) return null;
@@ -153,7 +145,7 @@ public class DownloadSymbolsController extends BaseController {
       LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", guid));
       return null;
     }
-    if(!storedFileName.equals(fileName)){
+    if(!storedFileName.equalsIgnoreCase(fileName)){
       LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
       return null;
     }

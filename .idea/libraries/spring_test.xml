@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="Servlet Api">
+  <library name="spring-test">
     <CLASSES>
-      <root url="jar://$TeamCityDistribution$/lib/servlet-api.jar!/" />
+      <root url="jar://$TeamCityDistribution$/devPackage/tests/spring-test.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -6,7 +6,6 @@ import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
-import jetbrains.buildServer.symbols.tools.WinDbgToolsHelper;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -18,6 +17,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -28,6 +28,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
 
   public static final String PDB_FILE_EXTENSION = "pdb";
+  private static final String X64_SRCSRV = "\\x64\\srcsrv";
+  private static final String X86_SRCSRV = "\\x86\\srcsrv";
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
@@ -45,18 +47,19 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
+        final long buildId = runningBuild.getBuildId();
         if(runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
-          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed.");
+          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed for build with id " + buildId);
           return;
         }
-        LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled.");
+        LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled for build with id " + buildId);
 
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
 
-        mySrcSrvHomeDir = WinDbgToolsHelper.getSrcSrvHomeDir(runningBuild);
+        mySrcSrvHomeDir = getSrcSrvHomeDir(runningBuild);
         if (mySrcSrvHomeDir == null) {
-          LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
+          LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed for build with id " + buildId);
           myProgressLogger.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
           return;
         }
@@ -72,7 +75,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         if(!isIndexingApplicable()) return;
         if (mySymbolsToProcess.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
-          LOG.debug("Symbols weren't found in artifacts to be published.");
+          LOG.debug("Symbols weren't found in artifacts to be published for build with id " + build.getBuildId());
         } else {
           myProgressLogger.message("Collecting symbol files signatures.");
           LOG.debug("Collecting symbol files signatures.");
@@ -84,7 +87,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
               myArtifactsWatcher.addNewArtifactsPath(symbolSignaturesFile + "=>" + ".teamcity/symbols");
             }
           } catch (IOException e) {
-            LOG.error("Error while dumping symbols/binaries signatures.", e);
+            LOG.error("Error while dumping symbols/binaries signatures for build with id " + build.getBuildId(), e);
             myProgressLogger.error("Error while dumping symbols/binaries signatures.");
             myProgressLogger.exception(e);
           }
@@ -122,6 +125,22 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         myProgressLogger.exception(e);
       }
     }
+  }
+
+  @Nullable
+  private File getSrcSrvHomeDir(@NotNull AgentRunningBuild build) {
+    final Map<String,String> agentConfigParameters = build.getAgentConfiguration().getConfigurationParameters();
+    String winDbgHomeDir = agentConfigParameters.get(WinDbgToolsDetector.WIN_DBG_PATH);
+    if(winDbgHomeDir == null){
+      LOG.debug("WinDbg tools are not mentioned in agent configuration.");
+      return null;
+    }
+    File srcSrvHomeDir = new File(winDbgHomeDir, X64_SRCSRV);
+    if (srcSrvHomeDir.isDirectory()) return srcSrvHomeDir;
+    srcSrvHomeDir = new File(winDbgHomeDir, X86_SRCSRV);
+    if (srcSrvHomeDir.isDirectory()) return srcSrvHomeDir;
+    LOG.debug("Failed to find Source Server tools home directory under WinDbg tools home directory detected on path " + winDbgHomeDir);
+    return null;
   }
 
   private Collection<File> getArtifactPathsByFileExtension(List<ArtifactsCollection> artifactsCollections, String fileExtension){
