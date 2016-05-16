@@ -41,13 +41,13 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
   public void setUp() throws Exception {
     myBuildMetadataStorage = new MetadataStorageMock();
     super.setUp();
-    myFixture.getServerSettings().setGuestLoginAllowed(true);
+    myFixture.getLoginConfiguration().setGuestLoginAllowed(true);
   }
 
   @Override
   protected BaseController createController() throws IOException {
     AuthorizationInterceptor authInterceptor = myFixture.getSingletonService(AuthorizationInterceptor.class);
-    AuthHelper authHelper = new AuthHelper(myFixture.getServerSettings(), myFixture.getUserModel(), myFixture.getSingletonService(HttpAuthenticationManager.class));
+    AuthHelper authHelper = new AuthHelper(myFixture.getLoginConfiguration(), myFixture.getUserModel(), myFixture.getSingletonService(HttpAuthenticationManager.class));
     return new DownloadSymbolsController(myServer, myWebManager, authInterceptor,  myFixture.getSecurityContext(), myBuildMetadataStorage, authHelper);
   }
 
@@ -89,7 +89,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
 
   @Test
   public void request_pdb_unauthorized() throws Exception {
-    myFixture.getServerSettings().setGuestLoginAllowed(false);
+    myFixture.getLoginConfiguration().setGuestLoginAllowed(false);
     myRequest.setRequestURI("mock", getRegisterPdbUrl("secur32.pdb", "8EF4E863187C45E78F4632152CC82FEB"));
     doGet();
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());

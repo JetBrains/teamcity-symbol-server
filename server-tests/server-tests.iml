@@ -8,10 +8,11 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="server" />
+    <orderEntry type="library" name="Servlet Api" level="project" />
+    <orderEntry type="library" name="Server-Api" level="project" />
     <orderEntry type="library" name="Test-Api" level="project" />
     <orderEntry type="library" name="testng" level="project" />
     <orderEntry type="library" name="jmock" level="project" />
-    <orderEntry type="library" name="Server-Api" level="project" />
     <orderEntry type="library" name="TeamCity server runtime" level="project" />
     <orderEntry type="library" scope="TEST" name="spring-test" level="project" />
   </component>
