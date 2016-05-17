@@ -25,11 +25,13 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
   private static final Logger LOG = Logger.getLogger(WinDbgToolsDetector.class);
 
   private static final String WINDOWS_KITS_INSTALLED_ROOTS_KEY_PATH = "Software/Microsoft/Windows Kits/Installed Roots";
+  private static final String WIN_DBG_10_ROOT_ENTRY_NAME = "WindowsDebuggersRoot10";
+  private static final String WIN_SDK_10_ROOT_ENTRY_NAME = "KitsRoot10";
   private static final String WIN_DBG_81_ROOT_ENTRY_NAME = "WindowsDebuggersRoot81";
   private static final String WIN_SDK_81_ROOT_ENTRY_NAME = "KitsRoot81";
   private static final String WIN_DBG_8_ROOT_ENTRY_NAME = "WindowsDebuggersRoot8";
   private static final String WIN_SDK_8_ROOT_ENTRY_NAME = "KitsRoot8";
-  private static final String WIN_DBG_HOME_DIR_RELATIVE_SDK8 = "\\Debuggers";
+  private static final String WIN_DBG_HOME_DIR_RELATIVE = "\\Debuggers";
 
   public static final String WIN_DBG_PATH = "WinDbg" + DotNetConstants.PATH;
   private static final String DEBUGGING_TOOLS_FOR_WINDOWS = "Debugging Tools for Windows";
@@ -48,14 +50,18 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
     if (!config.getSystemInfo().isWindows()) return;
     LOG.info("Searching WinDbg installation...");
 
-    LOG.info("Searching the WinDbg as part of Windows 8.1 SDK");
-    File winDbgHomeDir = searchSDK8x(WIN_DBG_81_ROOT_ENTRY_NAME, WIN_SDK_81_ROOT_ENTRY_NAME, "8.1");
-    if(winDbgHomeDir == null) {
-      LOG.info("Searching the WinDbg as part of Windows 8 SDK");
-      winDbgHomeDir = searchSDK8x(WIN_DBG_8_ROOT_ENTRY_NAME, WIN_SDK_8_ROOT_ENTRY_NAME, "8");
-    } if(winDbgHomeDir == null) {
-      LOG.info("Searching the WinDbg as part of Windows 7 SDK");
-      winDbgHomeDir = searchSDK7x();
+    LOG.info("Searching the WinDbg as part of Windows 10 SDK");
+    File winDbgHomeDir = searchSDK8AndLater(WIN_DBG_10_ROOT_ENTRY_NAME, WIN_SDK_10_ROOT_ENTRY_NAME, "10");
+    if(winDbgHomeDir == null){
+      LOG.info("Searching the WinDbg as part of Windows 8.1 SDK");
+      winDbgHomeDir = searchSDK8AndLater(WIN_DBG_81_ROOT_ENTRY_NAME, WIN_SDK_81_ROOT_ENTRY_NAME, "8.1");
+      if(winDbgHomeDir == null) {
+        LOG.info("Searching the WinDbg as part of Windows 8 SDK");
+        winDbgHomeDir = searchSDK8AndLater(WIN_DBG_8_ROOT_ENTRY_NAME, WIN_SDK_8_ROOT_ENTRY_NAME, "8");
+      } if(winDbgHomeDir == null) {
+        LOG.info("Searching the WinDbg as part of Windows 7 SDK");
+        winDbgHomeDir = searchSDK7x();
+      }
     }
 
     if(winDbgHomeDir == null) LOG.info("WinDbg tools were not found on this machine.");
@@ -67,7 +73,7 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
   }
 
   @Nullable
-  private File searchSDK8x(String winDbgRootEntryName, String winSdkRootEntryName, String sdkVersion) {
+  private File searchSDK8AndLater(String winDbgRootEntryName, String winSdkRootEntryName, String sdkVersion) {
     File winDbgHomeDir = myRegistryAccessor.readRegistryFile(LOCAL_MACHINE, BIT32, WINDOWS_KITS_INSTALLED_ROOTS_KEY_PATH, winDbgRootEntryName);
     if (winDbgHomeDir != null) return winDbgHomeDir;
     final File sdkHomeDir = myRegistryAccessor.readRegistryFile(LOCAL_MACHINE, BIT32, WINDOWS_KITS_INSTALLED_ROOTS_KEY_PATH, winSdkRootEntryName);
@@ -76,7 +82,7 @@ public class WinDbgToolsDetector extends AgentLifeCycleAdapter {
       return null;
     }
     LOG.debug(String.format("Windows SDK %s found, searching WinDbg under its home directory.", sdkHomeDir));
-    winDbgHomeDir = new File(sdkHomeDir, WIN_DBG_HOME_DIR_RELATIVE_SDK8);
+    winDbgHomeDir = new File(sdkHomeDir, WIN_DBG_HOME_DIR_RELATIVE);
     if(winDbgHomeDir.isDirectory()) return winDbgHomeDir;
     LOG.debug("Failed to find WinDbg home directory under Windows SDK home directory detected on path " + sdkHomeDir.getAbsolutePath());
     return null;
