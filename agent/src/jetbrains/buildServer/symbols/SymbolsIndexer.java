@@ -32,7 +32,6 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
-  @NotNull private final ArtifactPathHelper myArtifactPathHelper;
 
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
   @NotNull private final Map<File, String> myFileToArtifactMapToProcess = new ConcurrentHashMap<File, String>();
@@ -44,11 +43,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
                         @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
-                        @NotNull final ArtifactsWatcher artifactsWatcher,
-                        @NotNull final ArtifactPathHelper artifactPathHelper) {
+                        @NotNull final ArtifactsWatcher artifactsWatcher) {
     myArtifactsWatcher = artifactsWatcher;
     myJetSymbolsExe = new JetSymbolsExe(new File(pluginDescriptor.getPluginRoot(), "bin"));
-    myArtifactPathHelper = artifactPathHelper;
 
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
@@ -134,7 +131,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       try {
         myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
         pdbFilePatcher.patch(pdbFile, myProgressLogger);
-        myFileToArtifactMapToProcess.put(pdbFile, myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName()));
+        myFileToArtifactMapToProcess.put(pdbFile, ArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName()));
       } catch (Throwable e) {
         LOG.error("Error occurred while patching symbols file " + pdbFile, e);
         myProgressLogger.error("Error occurred while patching symbols file " + pdbFile);
