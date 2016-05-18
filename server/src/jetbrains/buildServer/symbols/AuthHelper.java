@@ -2,8 +2,8 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationManager;
 import jetbrains.buildServer.controllers.interceptors.auth.HttpAuthenticationResult;
+import jetbrains.buildServer.serverSide.auth.LoginConfiguration;
 import jetbrains.buildServer.serverSide.auth.ServerPrincipal;
-import jetbrains.buildServer.serverSide.ServerSettings;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.users.UserModel;
 import jetbrains.buildServer.util.Predicate;
@@ -22,14 +22,14 @@ public class AuthHelper {
 
   private static final Logger LOG = Logger.getLogger(AuthHelper.class);
 
-  @NotNull private final ServerSettings myServerSettings;
+  @NotNull private final LoginConfiguration myLoginConfiguration;
   @NotNull private final UserModel myUserModel;
   @NotNull private final HttpAuthenticationManager myAuthManager;
 
-  public AuthHelper(@NotNull ServerSettings serverSettings,
+  public AuthHelper(@NotNull LoginConfiguration loginConfiguration,
                     @NotNull UserModel userModel,
                     @NotNull HttpAuthenticationManager authManager) {
-    myServerSettings = serverSettings;
+    myLoginConfiguration = loginConfiguration;
     myUserModel = userModel;
     myAuthManager = authManager;
   }
@@ -38,7 +38,7 @@ public class AuthHelper {
   public SUser getAuthenticatedUser(@NotNull HttpServletRequest request,
                                     @NotNull HttpServletResponse response,
                                     @NotNull Predicate<SUser> hasPermissions) throws IOException {
-    if(myServerSettings.isGuestLoginAllowed()) {
+    if(myLoginConfiguration.isGuestLoginAllowed()) {
       LOG.debug("Guest access enabled on the server. Trying to check permissions of Guest.");
       final SUser guestUser = myUserModel.getGuestUser();
       if (hasPermissions.apply(guestUser)) {

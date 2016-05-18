@@ -13,7 +13,7 @@ class MetadataStorageMock implements MetadataStorage {
 
   private List<BuildMetadataEntry> myEntries = new ArrayList<BuildMetadataEntry>();
 
-  public void addEntry(final long buildId, final String fileName, final String fileSignature) {
+  public void addEntry(final long buildId, final String filePath, final String fileSignature) {
     myEntries.add(new BuildMetadataEntry() {
       public long getBuildId() {
         return buildId;
@@ -27,8 +27,7 @@ class MetadataStorageMock implements MetadataStorage {
       @NotNull
       public Map<String, String> getMetadata() {
         HashMap<String, String> map = new HashMap<String, String>();
-        map.put(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY, "foo");
-        map.put(BuildSymbolsIndexProvider.FILE_NAME_KEY, fileName);
+        map.put(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY, filePath);
         return map;
       }
     });

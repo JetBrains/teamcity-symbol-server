@@ -24,7 +24,7 @@ public class JetSymbolsExeTest extends BaseTestCase {
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    File homeDir = new File("tools\\JetSymbols").getAbsoluteFile();
+    File homeDir = new File("jet-symbols\\out").getAbsoluteFile();
     assertTrue("Failed to find JetSymbolsExe home dir on path " + homeDir.getAbsolutePath(), homeDir.isDirectory());
     myExe = new JetSymbolsExe(homeDir);
   }

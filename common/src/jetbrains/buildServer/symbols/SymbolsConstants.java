@@ -11,4 +11,6 @@ public class SymbolsConstants {
 
   public static final String APP_SYMBOLS = "/app/symbols/";
   public static final String APP_SOURCES = "/app/sources/";
+
+  public static final String SYMBOL_SIGNATURES_FILE_NAME_PREFIX = "symbol-signatures-artifacts-";
 }
