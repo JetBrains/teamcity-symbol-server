@@ -32,6 +32,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
+  @NotNull private final ArtifactPathHelper myArtifactPathHelper;
+
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
   @NotNull private final Map<File, String> myFileToArtifactMapToProcess = new ConcurrentHashMap<File, String>();
 
@@ -40,9 +42,13 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Nullable private File mySrcSrvHomeDir;
   @Nullable private FileUrlProvider myFileUrlProvider;
 
-  public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor, @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher, @NotNull final ArtifactsWatcher artifactsWatcher) {
+  public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
+                        @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
+                        @NotNull final ArtifactsWatcher artifactsWatcher,
+                        @NotNull final ArtifactPathHelper artifactPathHelper) {
     myArtifactsWatcher = artifactsWatcher;
     myJetSymbolsExe = new JetSymbolsExe(new File(pluginDescriptor.getPluginRoot(), "bin"));
+    myArtifactPathHelper = artifactPathHelper;
 
     agentDispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
@@ -86,7 +92,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
               for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
                 final File targetPdbFile = new File(signatureIndexEntry.getArtifactPath());
                 if(myFileToArtifactMapToProcess.containsKey(targetPdbFile)) {
-                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), myFileToArtifactMapToProcess.get(targetPdbFile)));
+                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), myFileToArtifactMapToProcess.get(targetPdbFile), targetPdbFile.getName()));
                 }
               }
               final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.SYMBOL_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
@@ -126,7 +132,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       try {
         myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
         pdbFilePatcher.patch(pdbFile, myProgressLogger);
-        myFileToArtifactMapToProcess.put(pdbFile, pdbFiles.get(pdbFile));
+        myFileToArtifactMapToProcess.put(pdbFile, myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName()));
       } catch (Throwable e) {
         LOG.error("Error occurred while patching symbols file " + pdbFile, e);
         myProgressLogger.error("Error occurred while patching symbols file " + pdbFile);

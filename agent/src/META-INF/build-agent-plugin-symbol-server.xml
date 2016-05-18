@@ -8,5 +8,6 @@
 
   <bean class="jetbrains.buildServer.symbols.SymbolsIndexer"/>
   <bean class="jetbrains.buildServer.symbols.WinDbgToolsDetector"/>
+  <bean class="jetbrains.buildServer.symbols.ArtifactPathHelper"/>
 
 </beans>

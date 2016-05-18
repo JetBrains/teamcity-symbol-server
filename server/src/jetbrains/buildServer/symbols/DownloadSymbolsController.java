@@ -139,9 +139,9 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
     final Map<String,String> metadata = entry.getMetadata();
+    final String storedArtifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
     final String storedFileName = metadata.get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
-    final String artifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
-    if(storedFileName == null || artifactPath == null){
+    if(storedFileName == null || storedArtifactPath == null){
       LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", guid));
       return null;
     }
@@ -149,15 +149,16 @@ public class DownloadSymbolsController extends BaseController {
       LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
       return null;
     }
+
     final long buildId = entry.getBuildId();
     final SBuild build = myServer.findBuildInstanceById(buildId);
     if(build == null){
       LOG.debug(String.format("Build not found by id %d.", buildId));
       return null;
     }
-    final BuildArtifact buildArtifact = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).getArtifact(artifactPath);
+    final BuildArtifact buildArtifact = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).getArtifact(storedArtifactPath);
     if(buildArtifact == null){
-      LOG.debug(String.format("Artifact not found by path %s for build with id %d.", artifactPath, buildId));
+      LOG.debug(String.format("Artifact not found by path %s for build with id %d.", storedArtifactPath, buildId));
     }
     return buildArtifact;
   }

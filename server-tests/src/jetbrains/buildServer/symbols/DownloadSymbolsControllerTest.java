@@ -119,8 +119,9 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
     final String guid = "8EF4E863187C45E78F4632152CC82FE";
     final String fileName = "secur32.pdb";
+    final String filePath = "foo/secur32.pdb";
 
-    myBuildMetadataStorage.addEntry(build.getBuildId(), fileName, guid.toLowerCase());
+    myBuildMetadataStorage.addEntry(build.getBuildId(), filePath, guid.toLowerCase());
     myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName));
 
     doGet();
