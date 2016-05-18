@@ -10,8 +10,9 @@ import org.jetbrains.annotations.NotNull;
  * Created by Evgeniy.Koshkin.
  */
 public class ArtifactPathHelper {
-    private static final String ARCHIVE_DELIMITER = "!";
-    private static final String FOLDER_DELIMITER = "/";
+    private static final String ARCHIVE_PATH_SEPARATOR = "!";
+    private static final String ARCHIVE_PATH_SEPARATOR_FULL = "!/";
+    private static final String FOLDER_SEPARATOR = "/";
 
     private final ExtensionHolder myExtensions;
 
@@ -21,8 +22,9 @@ public class ArtifactPathHelper {
 
     @NotNull
     String concatenateArtifactPath(String fileNamePrefix, String pdbFileName) {
-        final String delimiter = (isPathToArchive(fileNamePrefix) && !fileNamePrefix.contains(ARCHIVE_DELIMITER)) ? ARCHIVE_DELIMITER : FOLDER_DELIMITER;
-        return fileNamePrefix + delimiter + pdbFileName;
+      final String normilizedFileNamePrefix = fileNamePrefix.replace(ARCHIVE_PATH_SEPARATOR, ARCHIVE_PATH_SEPARATOR_FULL);
+      final String delimiter = (isPathToArchive(normilizedFileNamePrefix) && !normilizedFileNamePrefix.contains(ARCHIVE_PATH_SEPARATOR)) ? ARCHIVE_PATH_SEPARATOR_FULL : FOLDER_SEPARATOR;
+        return normilizedFileNamePrefix + delimiter + pdbFileName;
     }
 
     private boolean isPathToArchive(@NotNull final String path){
