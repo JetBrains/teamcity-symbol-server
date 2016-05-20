@@ -2,7 +2,9 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.impl.LogUtil;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataProvider;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
 import jetbrains.buildServer.util.CollectionsUtil;
@@ -10,11 +12,13 @@ import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.Logger;
 import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Evgeniy.Koshkin
@@ -60,12 +64,35 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
     for (final PdbSignatureIndexEntry indexEntry : indexEntries) {
       final String signature = indexEntry.getGuid();
       final String fileName = indexEntry.getFileName();
-      final String artifactPath = indexEntry.getArtifactPath();
+      String artifactPath = indexEntry.getArtifactPath();
+      if(artifactPath == null){
+        LOG.debug(String.format("Artifact path is not provided for artifact %s, locating it by name in build %s artifacts.", fileName, LogUtil.describe(sBuild)));
+        artifactPath = locateArtifact(sBuild, fileName);
+        if(artifactPath != null){
+          LOG.debug(String.format("Located artifact by name %s, path - %s. Build - %s", fileName, artifactPath, LogUtil.describe(sBuild)));
+        }
+      }
       final HashMap<String, String> data = new HashMap<String, String>();
       data.put(FILE_NAME_KEY, fileName);
       data.put(ARTIFACT_PATH_KEY, artifactPath);
       metadataStorageWriter.addParameters(signature, data);
       LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName + " build id " + buildId);
     }
+  }
+
+  @Nullable
+  private String locateArtifact(@NotNull SBuild build, final @NotNull String artifactName) {
+    final AtomicReference<String> locatedArtifactPath = new AtomicReference<String>(null);
+    build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
+      @NotNull
+      public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
+        if(artifact.getName().equals(artifactName)){
+          locatedArtifactPath.set(artifact.getRelativePath());
+          return Continuation.BREAK;
+        }
+        else return Continuation.CONTINUE;
+      }
+    });
+    return locatedArtifactPath.get();
   }
 }
