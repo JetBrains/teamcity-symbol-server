@@ -11,10 +11,10 @@ public class PdbSignatureIndexEntry {
     private final String myFileName;
     private final String myArtifactPath;
 
-    public PdbSignatureIndexEntry(@NotNull String guid, @NotNull String filePath, @Nullable String fileName) {
+    public PdbSignatureIndexEntry(@NotNull String guid, @NotNull String fileName, @Nullable String filePath) {
         myGuid = guid;
-        myArtifactPath = filePath;
         myFileName = fileName;
+        myArtifactPath = filePath;
     }
 
     @NotNull
@@ -23,12 +23,12 @@ public class PdbSignatureIndexEntry {
     }
 
     @NotNull
-    public String getArtifactPath() {
-        return myArtifactPath;
+    public String getFileName() {
+        return myFileName;
     }
 
     @Nullable
-    public String getFileName() {
-        return myFileName;
+    public String getArtifactPath() {
+        return myArtifactPath;
     }
 }

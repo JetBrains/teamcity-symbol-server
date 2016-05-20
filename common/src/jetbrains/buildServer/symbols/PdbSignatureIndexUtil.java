@@ -17,8 +17,8 @@ import java.util.*;
  */
 class PdbSignatureIndexUtil {
   private static final String SIGN = "sign";
-  private static final String FILE = "file";
-  private static final String FILE_NAME = "file-path";
+  private static final String FILE_NAME = "file";
+  private static final String FILE_PATH = "file-path";
   private static final String FILE_SIGNS = "file-signs";
   private static final String FILE_SIGN_ENTRY = "file-sign-entry";
 
@@ -29,7 +29,7 @@ class PdbSignatureIndexUtil {
     final Set<PdbSignatureIndexEntry> result = new HashSet<PdbSignatureIndexEntry>();
     for (Object signElementObject : document.getRootElement().getChildren()){
       final Element signElement = (Element) signElementObject;
-      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN)), signElement.getAttributeValue(FILE), signElement.getAttributeValue(FILE_NAME)));
+      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN)), signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
     }
     return result;
   }
@@ -39,10 +39,10 @@ class PdbSignatureIndexUtil {
     for (final PdbSignatureIndexEntry indexEntry : indexData){
       final Element entry = new Element(FILE_SIGN_ENTRY);
       entry.setAttribute(SIGN, indexEntry.getGuid());
-      entry.setAttribute(FILE, indexEntry.getArtifactPath());
-      String fileName = indexEntry.getFileName();
-      if(fileName != null){
-        entry.setAttribute(FILE_NAME, fileName);
+      entry.setAttribute(FILE_NAME, indexEntry.getFileName());
+      String artifactPath = indexEntry.getArtifactPath();
+      if(artifactPath != null){
+        entry.setAttribute(FILE_PATH, artifactPath);
       }
       root.addContent(entry);
     }

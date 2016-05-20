@@ -87,9 +87,11 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
             if(!signatureLocalFilesData.isEmpty()){
               final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
               for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
-                final File targetPdbFile = new File(signatureIndexEntry.getArtifactPath());
+                final String artifactPath = signatureIndexEntry.getArtifactPath();
+                if(artifactPath == null) continue;
+                final File targetPdbFile = new File(artifactPath);
                 if(myFileToArtifactMapToProcess.containsKey(targetPdbFile)) {
-                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), myFileToArtifactMapToProcess.get(targetPdbFile), targetPdbFile.getName()));
+                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetPdbFile.getName(), myFileToArtifactMapToProcess.get(targetPdbFile)));
                 }
               }
               final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.SYMBOL_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
