@@ -18,6 +18,7 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.serverSide.*;
+import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -43,7 +44,7 @@ public class SymbolsIndexerParametersPreprocessor implements BuildStartContextPr
       if(serverOwnUrl == null){
         serverOwnUrl = myRootUrlHolder.getRootUrl();
       }
-      final String sourceServerUrl = String.format("%s%s", serverOwnUrl, SymbolsConstants.APP_SOURCES);
+      final String sourceServerUrl = String.format("%s%s", StringUtil.removeTailingSlash(serverOwnUrl), SymbolsConstants.APP_SOURCES);
       context.addSharedParameter(SymbolsConstants.SOURCES_SERVER_URL_PARAM_NAME, sourceServerUrl);
     }
   }
