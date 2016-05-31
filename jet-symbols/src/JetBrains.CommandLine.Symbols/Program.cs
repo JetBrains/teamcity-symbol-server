@@ -36,7 +36,7 @@ namespace JetBrains.CommandLine.Symbols
 
     private static ICommand GetCommandToExecute(string[] args, out string error)
     {
-      error = Empty;
+      error = String.Empty;
       var str = args.First();
       var inputFilePath = FileSystemPath.TryParse(args[2].Substring(3));
       var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
