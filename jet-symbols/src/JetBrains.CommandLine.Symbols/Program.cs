@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static System.String;
 
 namespace JetBrains.CommandLine.Symbols
 {
@@ -14,7 +13,7 @@ namespace JetBrains.CommandLine.Symbols
     {
       AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
       {
-        Console.Error.WriteLine(Format("Unhandled excpetion: " + eventArgs.ExceptionObject));
+        Console.Error.WriteLine(String.Format("Unhandled excpetion: " + eventArgs.ExceptionObject));
       };
 
       try
@@ -49,7 +48,7 @@ namespace JetBrains.CommandLine.Symbols
         case DumpBinaryFileSignCommand.CMD_NAME:
           return new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
         default:
-          error = Format("{0} command is unknown.", str);
+          error = String.Format("{0} command is unknown.", str);
           return null;
       }
     }
