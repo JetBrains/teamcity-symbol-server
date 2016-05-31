@@ -23,6 +23,9 @@
         <webroots>
           <root url="file://$teamcitydistribution$/webapps/ROOT" relative="/" />
         </webroots>
+        <sourceRoots>
+          <root url="file://$TeamCityDistribution$/webapps/ROOT" />
+        </sourceRoots>
       </configuration>
     </facet>
   </component>
