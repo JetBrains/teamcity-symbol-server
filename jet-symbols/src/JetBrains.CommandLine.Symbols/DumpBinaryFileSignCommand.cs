@@ -35,7 +35,7 @@ namespace JetBrains.CommandLine.Symbols
       catch (Exception ex)
       {
         Console.Error.WriteLine(ex.Message);
-        return (string) null;
+        return null;
       }
     }
   }

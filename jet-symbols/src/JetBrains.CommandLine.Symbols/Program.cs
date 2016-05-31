@@ -1,72 +1,72 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: JetBrains.CommandLine.Symbols.Program
-// Assembly: JetBrains.CommandLine.Symbols, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325
-// MVID: EF046BF6-60AC-48EA-9121-8AF3D8D08853
-// Assembly location: C:\Data\Work\TeamCity\misc\tc-symbol-server\tools\JetSymbols\JetBrains.CommandLine.Symbols.exe
-
-using JetBrains.Util;
+﻿using JetBrains.Util;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using static System.String;
 
 namespace JetBrains.CommandLine.Symbols
 {
   internal static class Program
   {
-    private const int ERROR_EXIT_CODE = 1;
+    public const int ERROR_EXIT_CODE = 1;
 
     public static int Main(string[] args)
     {
+      AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
+      {
+        Console.Error.WriteLine(Format("Unhandled excpetion: " + eventArgs.ExceptionObject));
+      };
+
       try
       {
         string error;
-        ICommand commandToExecute = Program.GetCommandToExecute(args, out error);
+        var commandToExecute = GetCommandToExecute(args, out error);
         if (commandToExecute != null)
+        {
           return commandToExecute.Execute();
-        Program.PrintIncorrectUsageMessage(error);
-        return 1;
+        }
+        PrintIncorrectUsageMessage(error);
+        return ERROR_EXIT_CODE;
       }
       catch (Exception ex)
       {
-        Console.Error.WriteLine((object) ex);
-        return 1;
+        Console.Error.WriteLine(ex);
+        return ERROR_EXIT_CODE;
       }
     }
 
     private static ICommand GetCommandToExecute(string[] args, out string error)
     {
-      error = string.Empty;
-      string str = ((IEnumerable<string>) args).First<string>();
-      FileSystemPath inputFilePath = FileSystemPath.TryParse(args[2].Substring(3));
-      FileSystemPath outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
-      IEnumerable<FileSystemPath> targetFilePaths = Program.LoadPathsFromFile(inputFilePath);
+      error = Empty;
+      var str = args.First();
+      var inputFilePath = FileSystemPath.TryParse(args[2].Substring(3));
+      var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
+      var targetFilePaths = LoadPathsFromFile(inputFilePath);
       switch (str)
       {
-        case "dumpSymbolSign":
-          return (ICommand) new DumpSymbolsFileSignCommand(outputFilePath, targetFilePaths);
-        case "dumpBinSign":
-          return (ICommand) new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
+        case DumpSymbolsFileSignCommand.CMD_NAME:
+          return new DumpSymbolsFileSignCommand(outputFilePath, targetFilePaths);
+        case DumpBinaryFileSignCommand.CMD_NAME:
+          return new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
         default:
-          error = string.Format("{0} command is unknown.", (object) str);
-          return (ICommand) null;
+          error = Format("{0} command is unknown.", str);
+          return null;
       }
     }
 
     private static IEnumerable<FileSystemPath> LoadPathsFromFile(FileSystemPath inputFilePath)
     {
-      ICollection<FileSystemPath> result = (ICollection<FileSystemPath>) new HashSet<FileSystemPath>();
-      inputFilePath.ReadTextStream((Action<StreamReader>) (streamReader =>
+      ICollection<FileSystemPath> result = new HashSet<FileSystemPath>();
+      inputFilePath.ReadTextStream(streamReader =>
       {
         while (!streamReader.EndOfStream)
         {
-          FileSystemPath fileSystemPath = FileSystemPath.TryParse(streamReader.ReadLine());
+          var fileSystemPath = FileSystemPath.TryParse(streamReader.ReadLine());
           if (!fileSystemPath.IsEmpty)
             result.Add(fileSystemPath);
         }
-      }), (Encoding) null);
-      return (IEnumerable<FileSystemPath>) result;
+      });
+      return result;
     }
 
     private static void PrintIncorrectUsageMessage(string error)

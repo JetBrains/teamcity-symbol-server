@@ -1,10 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: JetBrains.CommandLine.Symbols.DumpFilesSignCommandBase
-// Assembly: JetBrains.CommandLine.Symbols, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325
-// MVID: EF046BF6-60AC-48EA-9121-8AF3D8D08853
-// Assembly location: C:\Data\Work\TeamCity\misc\tc-symbol-server\tools\JetSymbols\JetBrains.CommandLine.Symbols.exe
-
-using JetBrains.Util;
+﻿using JetBrains.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,29 +8,29 @@ namespace JetBrains.CommandLine.Symbols
 {
   public abstract class DumpFilesSignCommandBase : ICommand
   {
-    private FileSystemPath myOutputFilePath;
-    private IEnumerable<FileSystemPath> myTargetFilePaths;
+    private readonly FileSystemPath myOutputFilePath;
+    private readonly IEnumerable<FileSystemPath> myTargetFilePaths;
 
     protected DumpFilesSignCommandBase(FileSystemPath outputFilePath, IEnumerable<FileSystemPath> targetFilePaths)
     {
-      this.myOutputFilePath = outputFilePath;
-      this.myTargetFilePaths = targetFilePaths;
+      myOutputFilePath = outputFilePath;
+      myTargetFilePaths = targetFilePaths;
     }
 
     public int Execute()
     {
       try
       {
-        if (this.myOutputFilePath.IsEmpty)
+        if (myOutputFilePath.IsEmpty)
         {
           Console.Error.WriteLine("Output file path is empty.");
           return 1;
         }
-        Dictionary<FileSystemPath, string> dictionary = this.myTargetFilePaths.ToDictionary<FileSystemPath, FileSystemPath, string>((Func<FileSystemPath, FileSystemPath>) (targetFilePath => targetFilePath), new Func<FileSystemPath, string>(this.GetFileSignature));
-        if (!dictionary.IsEmpty<KeyValuePair<FileSystemPath, string>>())
+        var dictionary = myTargetFilePaths.ToDictionary(targetFilePath => targetFilePath, GetFileSignature);
+        if (!dictionary.IsEmpty())
         {
-          DumpFilesSignCommandBase.WriteToFile(this.myOutputFilePath, dictionary);
-          Console.Out.WriteLine("Dumped {0} signature entries to the file {1}", (object) dictionary.Count, (object) this.myOutputFilePath);
+          WriteToFile(myOutputFilePath, dictionary);
+          Console.Out.WriteLine("Dumped {0} signature entries to the file {1}", dictionary.Count, myOutputFilePath);
           return 0;
         }
         Console.Error.WriteLine("Nothing to dump.");
@@ -44,8 +38,9 @@ namespace JetBrains.CommandLine.Symbols
       }
       catch (Exception ex)
       {
-        Console.Error.WriteLine((object) ex);
-        return 1;
+        Console.Error.WriteLine(ex.Message);
+        Console.Error.WriteLine(ex.StackTrace);
+        return Program.ERROR_EXIT_CODE;
       }
     }
 
