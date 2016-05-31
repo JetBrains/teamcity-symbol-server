@@ -37,10 +37,13 @@ public class JetSymbolsExe {
     }
     final int exitCode = execResult.getExitCode();
     if (exitCode != 0) {
-      buildLogger.warning(String.format("%s ends with non-zero exit code.", SYMBOLS_EXE));
+      buildLogger.warning(String.format("%s ends with non-zero exit code %s.", SYMBOLS_EXE, execResult));
       buildLogger.warning("Stdout: " + stdout);
       buildLogger.warning("Stderr: " + execResult.getStderr());
-      buildLogger.exception(execResult.getException());
+      final Throwable exception = execResult.getException();
+      if(exception != null){
+        buildLogger.exception(exception);
+      }
     }
     return exitCode;
   }

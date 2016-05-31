@@ -84,7 +84,10 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           LOG.debug("Collecting symbol files signatures.");
           try {
             final Set<PdbSignatureIndexEntry> signatureLocalFilesData = getSignatures(myFileToArtifactMapToProcess.keySet());
-            if(!signatureLocalFilesData.isEmpty()){
+            if (signatureLocalFilesData.isEmpty()) {
+              LOG.warn("No information was collected about symbol files signatures");
+              myProgressLogger.warning("No information was collected about symbol files signatures");
+            } else {
               final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
               for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
                 final String artifactPath = signatureIndexEntry.getArtifactPath();
