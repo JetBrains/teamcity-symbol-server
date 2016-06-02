@@ -52,7 +52,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
     Set<PdbSignatureIndexEntry> indexEntries = Collections.emptySet();
     try {
-      indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream());
+      indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream(), false);
     } catch (IOException e) {
       LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
     } catch (JDOMException e) {
