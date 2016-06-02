@@ -47,14 +47,14 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
               !symbolSignaturesSource.getName().startsWith(SymbolsConstants.BINARY_SIGNATURES_FILE_NAME_PREFIX))
         continue;
 
-      Set<PdbSignatureIndexEntry> indexEntries = Collections.emptySet();
-      try {
-        indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream());
-      } catch (IOException e) {
-        LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
-      } catch (JDOMException e) {
-        LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
-      }
+    Set<PdbSignatureIndexEntry> indexEntries = Collections.emptySet();
+    try {
+      indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream(), false);
+    } catch (IOException e) {
+      LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
+    } catch (JDOMException e) {
+      LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
+    }
 
       LOG.debug(String.format("Build with id %d provides %d symbol file signatures.", buildId, indexEntries.size()));
 

@@ -209,7 +209,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       myArtifactsWatcher.addNewArtifactsPath(guidDumpFile + "=>" + ".teamcity/symbols");
     }
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile));
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true);
     else
       return Collections.emptySet();
   }
@@ -221,7 +221,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       myArtifactsWatcher.addNewArtifactsPath(guidDumpFile + "=>" + ".teamcity/symbols");
     }
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile));
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true);
     else
       return Collections.emptySet();
   }
