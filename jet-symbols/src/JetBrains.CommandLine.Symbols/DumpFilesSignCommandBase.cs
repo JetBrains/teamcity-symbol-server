@@ -51,7 +51,8 @@ namespace JetBrains.CommandLine.Symbols
       foreach (KeyValuePair<FileSystemPath, string> signature in signatures)
       {
         XmlElement element = node.CreateElement("file-sign-entry");
-        element.CreateAttributeWithNonEmptyValue("file", signature.Key.FullPath);
+        element.CreateAttributeWithNonEmptyValue("file-path", signature.Key.FullPath);
+        element.CreateAttributeWithNonEmptyValue("file", signature.Key.Name);
         string str = signature.Value;
         if (str != null)
           element.CreateAttributeWithNonEmptyValue("sign", str);
