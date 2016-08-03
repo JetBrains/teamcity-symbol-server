@@ -63,7 +63,8 @@ public class JetSymbolsExe {
         int size = readIntLE(randomAccess, peOffset + 80);
         String signature = Integer.toHexString(timestamp) + Integer.toHexString(size);
         final Element entry = new Element("file-sign-entry");
-        entry.setAttribute("file", file.getPath());
+        entry.setAttribute("file-path", file.getPath());
+        entry.setAttribute("file", file.getName());
         entry.setAttribute("sign", signature);
         root.addContent(entry);
       } catch (IOException e) {
