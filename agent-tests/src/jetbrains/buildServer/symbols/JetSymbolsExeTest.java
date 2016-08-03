@@ -32,7 +32,7 @@ public class JetSymbolsExeTest extends BaseTestCase {
   @Test
   public void testCmdParametersLengthLimit() throws Exception {
     final File output = FileUtil.createTempFile("testCmdParametersLengthLimit", ".out");
-    final int dumpExitCode = myExe.dumpGuidsToFile(getFilesCollection(500), output, new NullBuildProgressLogger());
+    final int dumpExitCode = myExe.dumpPdbGuidsToFile(getFilesCollection(500), output, new NullBuildProgressLogger());
     assertEquals(0, dumpExitCode);
   }
 
@@ -40,7 +40,7 @@ public class JetSymbolsExeTest extends BaseTestCase {
   public void testSpacesInPaths() throws Exception {
     final File output = FileUtil.createTempFile("test spaces in paths", ".out");
     final File input = FileUtil.createTempFile("test spaces in paths", ".in");
-    final int exitCode = myExe.dumpGuidsToFile(Collections.singleton(input), output, new NullBuildProgressLogger());
+    final int exitCode = myExe.dumpPdbGuidsToFile(Collections.singleton(input), output, new NullBuildProgressLogger());
     assertEquals(0, exitCode);
   }
 
