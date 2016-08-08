@@ -95,15 +95,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
               LOG.warn("No information was collected about symbol files signatures");
               myProgressLogger.warning("No information was collected about symbol files signatures");
             } else {
-              final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
-              for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
-                final String artifactPath = signatureIndexEntry.getArtifactPath();
-                if(artifactPath == null) continue;
-                final File targetPdbFile = new File(artifactPath);
-                if(myPdbFileToArtifactMapToProcess.containsKey(targetPdbFile)) {
-                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetPdbFile.getName(), myPdbFileToArtifactMapToProcess.get(targetPdbFile)));
-                }
-              }
+              final Set<PdbSignatureIndexEntry> indexData = getSignatureIndexEntries(signatureLocalFilesData, myPdbFileToArtifactMapToProcess);
               final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.SYMBOL_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
               PdbSignatureIndexUtil.write(new FileOutputStream(indexDataFile), indexData);
               myProgressLogger.message("Publishing collected symbol files signatures.");
@@ -129,15 +121,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
               LOG.warn("No information was collected about binary files signatures");
               myProgressLogger.warning("No information was collected about binary files signatures");
             } else {
-              final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
-              for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
-                final String artifactPath = signatureIndexEntry.getArtifactPath();
-                if(artifactPath == null) continue;
-                final File targetBinaryFile = new File(artifactPath);
-                if(myBinaryFileToArtifactMapToProcess.containsKey(targetBinaryFile)) {
-                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetBinaryFile.getName(), myBinaryFileToArtifactMapToProcess.get(targetBinaryFile)));
-                }
-              }
+              final Set<PdbSignatureIndexEntry> indexData = getSignatureIndexEntries(signatureLocalFilesData, myBinaryFileToArtifactMapToProcess);
               final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.BINARY_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
               PdbSignatureIndexUtil.write(new FileOutputStream(indexDataFile), indexData);
               myProgressLogger.message("Publishing collected binary files signatures.");
@@ -150,6 +134,20 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           }
         }
         myBinaryFileToArtifactMapToProcess.clear();
+      }
+
+      @NotNull
+      private Set<PdbSignatureIndexEntry> getSignatureIndexEntries(Set<PdbSignatureIndexEntry> signatureLocalFilesData, Map<File, String> artifactMap) {
+        final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
+        for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
+          final String artifactPath = signatureIndexEntry.getArtifactPath();
+          if(artifactPath == null) continue;
+          final File targetFile = new File(artifactPath);
+          if(artifactMap.containsKey(targetFile)) {
+            indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetFile.getName(), artifactMap.get(targetFile)));
+          }
+        }
+        return indexData;
       }
     });
   }
