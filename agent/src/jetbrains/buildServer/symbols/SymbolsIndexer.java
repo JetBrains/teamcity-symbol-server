@@ -5,6 +5,7 @@ import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
+import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
@@ -182,41 +183,35 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     }
 
     LOG.debug("Searching for binary files in publishing artifacts.");
-    final Map<File, String> exeFiles = getArtifactPathsByFileExtension(artifacts, EXE_FILE_EXTENSION);
+    getBinaryArtifacts(artifacts, EXE_FILE_EXTENSION);
+    getBinaryArtifacts(artifacts, DLL_FILE_EXTENSION);
+  }
 
-    for (File exeFile : exeFiles.keySet()){
-      if(myBinaryFileToArtifactMapToProcess.containsKey(exeFile)){
-        LOG.debug(String.format("File %s already processed. Skipped.", exeFile.getAbsolutePath()));
+  private void getBinaryArtifacts(@NotNull List<ArtifactsCollection> artifacts, String fileExtension) {
+    final Map<File, String> binaryFiles = getArtifactPathsByFileExtension(artifacts, fileExtension);
+    for (File binaryFile : binaryFiles.keySet()){
+      if(myBinaryFileToArtifactMapToProcess.containsKey(binaryFile)){
+        LOG.debug(String.format("File %s already processed. Skipped.", binaryFile.getAbsolutePath()));
         continue;
       }
-      myBinaryFileToArtifactMapToProcess.put(exeFile, myArtifactPathHelper.concatenateArtifactPath(exeFiles.get(exeFile), exeFile.getName()));
-    }
-
-    final Map<File, String> dllFiles = getArtifactPathsByFileExtension(artifacts, DLL_FILE_EXTENSION);
-    for (File dllFile : dllFiles.keySet()){
-      if(myBinaryFileToArtifactMapToProcess.containsKey(dllFile)){
-        LOG.debug(String.format("File %s already processed. Skipped.", dllFile.getAbsolutePath()));
-        continue;
-      }
-      myBinaryFileToArtifactMapToProcess.put(dllFile, myArtifactPathHelper.concatenateArtifactPath(dllFiles.get(dllFile), dllFile.getName()));
+      myBinaryFileToArtifactMapToProcess.put(binaryFile, myArtifactPathHelper.concatenateArtifactPath(binaryFiles.get(binaryFile), binaryFile.getName()));
     }
   }
 
   private Set<PdbSignatureIndexEntry> getPdbSignatures(Collection<File> files) throws IOException, JDOMException {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "symbol-signatures-local-", ".xml", false);
     myJetSymbolsExe.dumpPdbGuidsToFile(files, guidDumpFile, myProgressLogger);
-    if(guidDumpFile.exists()){
-      myArtifactsWatcher.addNewArtifactsPath(guidDumpFile + "=>" + ".teamcity/symbols");
-    }
-    if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true);
-    else
-      return Collections.emptySet();
+    return getSignaturesFromDumpXml(guidDumpFile);
   }
 
   private Set<PdbSignatureIndexEntry> getBinarySignatures(Collection<File> files) throws IOException, JDOMException {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "binary-signatures-local-", ".xml", false);
-    myJetSymbolsExe.dumpBinaryGuidsToFile(files, guidDumpFile, myProgressLogger);
+    BinaryGuidDumper.dumpBinaryGuidsToFile(files, guidDumpFile, myProgressLogger);
+    return getSignaturesFromDumpXml(guidDumpFile);
+  }
+
+  @NotNull
+  private Set<PdbSignatureIndexEntry> getSignaturesFromDumpXml(File guidDumpFile) throws JDOMException, IOException {
     if(guidDumpFile.exists()){
       myArtifactsWatcher.addNewArtifactsPath(guidDumpFile + "=>" + ".teamcity/symbols");
     }
