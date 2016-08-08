@@ -23,13 +23,13 @@ class PdbSignatureIndexUtil {
   private static final String FILE_SIGN_ENTRY = "file-sign-entry";
 
   @NotNull
-  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream) throws JDOMException, IOException {
+  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream, final boolean withDebugType) throws JDOMException, IOException {
     final SAXBuilder builder = new SAXBuilder();
     final Document document = builder.build(inputStream);
     final Set<PdbSignatureIndexEntry> result = new HashSet<PdbSignatureIndexEntry>();
     for (Object signElementObject : document.getRootElement().getChildren()){
       final Element signElement = (Element) signElementObject;
-      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN)), signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
+      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN), withDebugType), signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
     }
     return result;
   }
@@ -49,7 +49,10 @@ class PdbSignatureIndexUtil {
     XmlUtil.saveDocument(new Document(root), outputStream);
   }
 
-  private static String extractGuid(String sign) {
-    return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
+  private static String extractGuid(String sign, boolean cutDebugType) {
+    if (cutDebugType)
+      return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
+    else
+      return sign.toLowerCase();
   }
 }

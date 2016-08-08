@@ -5,6 +5,7 @@ import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
+import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
@@ -28,6 +29,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
 
   public static final String PDB_FILE_EXTENSION = "pdb";
+  public static final String DLL_FILE_EXTENSION = "dll";
+  public static final String EXE_FILE_EXTENSION = "exe";
   private static final String X64_SRCSRV = "\\x64\\srcsrv";
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
 
@@ -35,7 +38,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @NotNull private final ArtifactPathHelper myArtifactPathHelper;
 
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
-  @NotNull private final Map<File, String> myFileToArtifactMapToProcess = new ConcurrentHashMap<File, String>();
+  @NotNull private final Map<File, String> myPdbFileToArtifactMapToProcess = new ConcurrentHashMap<File, String>();
+  @NotNull private final Map<File, String> myBinaryFileToArtifactMapToProcess = new ConcurrentHashMap<File, String>();
 
   @Nullable private BuildProgressLogger myProgressLogger;
   @Nullable private File myBuildTempDirectory;
@@ -79,27 +83,19 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
         if(!isIndexingApplicable()) return;
-        if (myFileToArtifactMapToProcess.isEmpty()) {
+        if (myPdbFileToArtifactMapToProcess.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published for build with id " + build.getBuildId());
         } else {
           myProgressLogger.message("Collecting symbol files signatures.");
           LOG.debug("Collecting symbol files signatures.");
           try {
-            final Set<PdbSignatureIndexEntry> signatureLocalFilesData = getSignatures(myFileToArtifactMapToProcess.keySet());
+            final Set<PdbSignatureIndexEntry> signatureLocalFilesData = getPdbSignatures(myPdbFileToArtifactMapToProcess.keySet());
             if (signatureLocalFilesData.isEmpty()) {
               LOG.warn("No information was collected about symbol files signatures");
               myProgressLogger.warning("No information was collected about symbol files signatures");
             } else {
-              final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
-              for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
-                final String artifactPath = signatureIndexEntry.getArtifactPath();
-                if(artifactPath == null) continue;
-                final File targetPdbFile = new File(artifactPath);
-                if(myFileToArtifactMapToProcess.containsKey(targetPdbFile)) {
-                  indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetPdbFile.getName(), myFileToArtifactMapToProcess.get(targetPdbFile)));
-                }
-              }
+              final Set<PdbSignatureIndexEntry> indexData = getSignatureIndexEntries(signatureLocalFilesData, myPdbFileToArtifactMapToProcess);
               final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.SYMBOL_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
               PdbSignatureIndexUtil.write(new FileOutputStream(indexDataFile), indexData);
               myProgressLogger.message("Publishing collected symbol files signatures.");
@@ -111,7 +107,47 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
             myProgressLogger.exception(e);
           }
         }
-        myFileToArtifactMapToProcess.clear();
+        myPdbFileToArtifactMapToProcess.clear();
+
+        if (myBinaryFileToArtifactMapToProcess.isEmpty()) {
+          myProgressLogger.warning("Binaries weren't found in artifacts to be published.");
+          LOG.debug("Binaries weren't found in artifacts to be published for build with id " + build.getBuildId());
+        } else {
+          myProgressLogger.message("Collecting binary files signatures.");
+          LOG.debug("Collecting binary files signatures.");
+          try {
+            final Set<PdbSignatureIndexEntry> signatureLocalFilesData = getBinarySignatures(myBinaryFileToArtifactMapToProcess.keySet());
+            if (signatureLocalFilesData.isEmpty()) {
+              LOG.warn("No information was collected about binary files signatures");
+              myProgressLogger.warning("No information was collected about binary files signatures");
+            } else {
+              final Set<PdbSignatureIndexEntry> indexData = getSignatureIndexEntries(signatureLocalFilesData, myBinaryFileToArtifactMapToProcess);
+              final File indexDataFile = FileUtil.createTempFile(myBuildTempDirectory, SymbolsConstants.BINARY_SIGNATURES_FILE_NAME_PREFIX, ".xml", false);
+              PdbSignatureIndexUtil.write(new FileOutputStream(indexDataFile), indexData);
+              myProgressLogger.message("Publishing collected binary files signatures.");
+              myArtifactsWatcher.addNewArtifactsPath(indexDataFile + "=>" + ".teamcity/symbols");
+            }
+          } catch (Exception e) {
+            LOG.error("Error while dumping symbols/binaries signatures for build with id " + build.getBuildId(), e);
+            myProgressLogger.error("Error while dumping symbols/binaries signatures.");
+            myProgressLogger.exception(e);
+          }
+        }
+        myBinaryFileToArtifactMapToProcess.clear();
+      }
+
+      @NotNull
+      private Set<PdbSignatureIndexEntry> getSignatureIndexEntries(Set<PdbSignatureIndexEntry> signatureLocalFilesData, Map<File, String> artifactMap) {
+        final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
+        for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
+          final String artifactPath = signatureIndexEntry.getArtifactPath();
+          if(artifactPath == null) continue;
+          final File targetFile = new File(artifactPath);
+          if(artifactMap.containsKey(targetFile)) {
+            indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetFile.getName(), artifactMap.get(targetFile)));
+          }
+        }
+        return indexData;
       }
     });
   }
@@ -126,34 +162,59 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
     LOG.debug("Searching for symbol files in publishing artifacts.");
     final Map<File, String> pdbFiles = getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION);
-    if(pdbFiles.isEmpty()) return;
 
     final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuildTempDirectory, mySrcSrvHomeDir, new SrcSrvStreamBuilder(myFileUrlProvider, myProgressLogger));
     for(File pdbFile : pdbFiles.keySet()){
-      if(myFileToArtifactMapToProcess.containsKey(pdbFile)){
+      if(myPdbFileToArtifactMapToProcess.containsKey(pdbFile)){
         LOG.debug(String.format("File %s already processed. Skipped.", pdbFile.getAbsolutePath()));
         continue;
       }
       try {
         myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
         pdbFilePatcher.patch(pdbFile, myProgressLogger);
-        myFileToArtifactMapToProcess.put(pdbFile, myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName()));
+        myPdbFileToArtifactMapToProcess.put(pdbFile, myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName()));
       } catch (Throwable e) {
         LOG.error("Error occurred while patching symbols file " + pdbFile, e);
         myProgressLogger.error("Error occurred while patching symbols file " + pdbFile);
         myProgressLogger.exception(e);
       }
     }
+
+    LOG.debug("Searching for binary files in publishing artifacts.");
+    getBinaryArtifacts(artifacts, EXE_FILE_EXTENSION);
+    getBinaryArtifacts(artifacts, DLL_FILE_EXTENSION);
   }
 
-  private Set<PdbSignatureIndexEntry> getSignatures(Collection<File> files) throws IOException, JDOMException {
+  private void getBinaryArtifacts(@NotNull List<ArtifactsCollection> artifacts, String fileExtension) {
+    final Map<File, String> binaryFiles = getArtifactPathsByFileExtension(artifacts, fileExtension);
+    for (File binaryFile : binaryFiles.keySet()){
+      if(myBinaryFileToArtifactMapToProcess.containsKey(binaryFile)){
+        LOG.debug(String.format("File %s already processed. Skipped.", binaryFile.getAbsolutePath()));
+        continue;
+      }
+      myBinaryFileToArtifactMapToProcess.put(binaryFile, myArtifactPathHelper.concatenateArtifactPath(binaryFiles.get(binaryFile), binaryFile.getName()));
+    }
+  }
+
+  private Set<PdbSignatureIndexEntry> getPdbSignatures(Collection<File> files) throws IOException, JDOMException {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "symbol-signatures-local-", ".xml", false);
-    myJetSymbolsExe.dumpGuidsToFile(files, guidDumpFile, myProgressLogger);
+    myJetSymbolsExe.dumpPdbGuidsToFile(files, guidDumpFile, myProgressLogger);
+    return getSignaturesFromDumpXml(guidDumpFile);
+  }
+
+  private Set<PdbSignatureIndexEntry> getBinarySignatures(Collection<File> files) throws IOException, JDOMException {
+    final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "binary-signatures-local-", ".xml", false);
+    BinaryGuidDumper.dumpBinaryGuidsToFile(files, guidDumpFile, myProgressLogger);
+    return getSignaturesFromDumpXml(guidDumpFile);
+  }
+
+  @NotNull
+  private Set<PdbSignatureIndexEntry> getSignaturesFromDumpXml(File guidDumpFile) throws JDOMException, IOException {
     if(guidDumpFile.exists()){
       myArtifactsWatcher.addNewArtifactsPath(guidDumpFile + "=>" + ".teamcity/symbols");
     }
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile));
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true);
     else
       return Collections.emptySet();
   }

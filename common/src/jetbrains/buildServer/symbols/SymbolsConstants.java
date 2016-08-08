@@ -13,4 +13,5 @@ public class SymbolsConstants {
   public static final String APP_SOURCES = "/app/sources/";
 
   public static final String SYMBOL_SIGNATURES_FILE_NAME_PREFIX = "symbol-signatures-artifacts-";
+  public static final String BINARY_SIGNATURES_FILE_NAME_PREFIX = "binary-signatures-artifacts-";
 }

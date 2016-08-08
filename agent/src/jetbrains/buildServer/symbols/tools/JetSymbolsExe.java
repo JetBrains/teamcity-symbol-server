@@ -6,8 +6,7 @@ import jetbrains.buildServer.SimpleCommandLineProcessRunner;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.util.FileUtil;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collection;
 
 /**
@@ -23,7 +22,7 @@ public class JetSymbolsExe {
     myExePath = new File(homeDir, SYMBOLS_EXE);
   }
 
-  public int dumpGuidsToFile(Collection<File> files, File output, BuildProgressLogger buildLogger) throws IOException {
+  public int dumpPdbGuidsToFile(Collection<File> files, File output, BuildProgressLogger buildLogger) throws IOException {
     final GeneralCommandLine commandLine = new GeneralCommandLine();
     commandLine.setExePath(myExePath.getPath());
     commandLine.addParameter(DUMP_SYMBOL_SIGN_CMD);

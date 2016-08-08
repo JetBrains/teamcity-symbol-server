@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class DownloadSymbolsController extends BaseController {
 
-  private static final String COMPRESSED_FILE_EXTENSION = "pd_";
+  private static final String COMPRESSED_FILE_EXTENSION = "_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
 
   private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
@@ -156,7 +156,7 @@ public class DownloadSymbolsController extends BaseController {
       LOG.debug(String.format("Build not found by id %d.", buildId));
       return null;
     }
-    final BuildArtifact buildArtifact = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT_WITH_ARCHIVES_CONTENT).getArtifact(storedArtifactPath);
+    final BuildArtifact buildArtifact = build.getArtifacts(BuildArtifactsViewMode.VIEW_ALL_WITH_ARCHIVES_CONTENT).getArtifact(storedArtifactPath);
     if(buildArtifact == null){
       LOG.debug(String.format("Artifact not found by path %s for build with id %d.", storedArtifactPath, buildId));
     }
