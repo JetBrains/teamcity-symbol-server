@@ -5,7 +5,7 @@
     <name>symbol-server</name>
     <display-name>Symbol Server</display-name>
     <version>@Plugin_Version@</version> <!-- will be replaced from script -->
-    <description>Allows to use TeamCity as a Windows symbol server</description>
+    <description>Allows using TeamCity as a Windows symbol server</description>
     <vendor>
       <name>@Plugin_Vendor@</name>  <!-- will be replaced from script -->
       <url>@Plugin_Vendor_Url@</url> <!-- will be replaced from script -->
