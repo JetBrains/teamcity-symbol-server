@@ -1,5 +1,7 @@
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.BuildProblemData;
+import jetbrains.buildServer.BuildProblemTypes;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
@@ -21,6 +23,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static jetbrains.buildServer.dotNet.DotNetConstants.DOTNET_FRAMEWORK_3_5;
+
 /**
  * @author Evgeniy.Koshkin
  */
@@ -33,6 +37,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   public static final String EXE_FILE_EXTENSION = "exe";
   private static final String X64_SRCSRV = "\\x64\\srcsrv";
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
+  public static final String NET_35_NOT_FOUND_PROBLEM_IDENTITY = "net35symbolindexing";
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final ArtifactPathHelper myArtifactPathHelper;
@@ -67,7 +72,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
 
-        mySrcSrvHomeDir = getSrcSrvHomeDir(runningBuild);
+        checkAndReportRuntimeRequirements(runningBuild.getAgentConfiguration(), myProgressLogger);
+
+        mySrcSrvHomeDir = getSrcSrvHomeDir(runningBuild.getAgentConfiguration());
         if (mySrcSrvHomeDir == null) {
           LOG.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed for build with id " + buildId);
           myProgressLogger.error("Failed to find Source Server tools home directory. No symbol and source indexing will be performed.");
@@ -220,8 +227,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   @Nullable
-  private File getSrcSrvHomeDir(@NotNull AgentRunningBuild build) {
-    final Map<String,String> agentConfigParameters = build.getAgentConfiguration().getConfigurationParameters();
+  private File getSrcSrvHomeDir(@NotNull BuildAgentConfiguration agentConfiguration) {
+    final Map<String,String> agentConfigParameters = agentConfiguration.getConfigurationParameters();
     String winDbgHomeDir = agentConfigParameters.get(WinDbgToolsDetector.WIN_DBG_PATH);
     if(winDbgHomeDir == null){
       LOG.debug("WinDbg tools are not mentioned in agent configuration.");
@@ -250,5 +257,12 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   private boolean isIndexingApplicable() {
     return myFileUrlProvider != null && mySrcSrvHomeDir != null;
+  }
+
+  private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){
+    for (String parameterName : agentConfiguration.getConfigurationParameters().keySet()){
+      if(parameterName.startsWith(DOTNET_FRAMEWORK_3_5)) return;
+    }
+    logger.logBuildProblem(BuildProblemData.createBuildProblem(NET_35_NOT_FOUND_PROBLEM_IDENTITY, BuildProblemTypes.TC_ERROR_MESSAGE_TYPE, ".NET 3.5 runtime required for symbols indexing was not found on build agent."));
   }
 }
