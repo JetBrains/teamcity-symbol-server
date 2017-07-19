@@ -3,7 +3,6 @@ package jetbrains.buildServer.symbols;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
-import jetbrains.buildServer.serverSide.metadata.impl.MetadataStorageException;
 import jetbrains.buildServer.util.Action;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +52,7 @@ class MetadataStorageMock implements MetadataStorage {
     return myEntries.iterator();
   }
 
-  public boolean updateCache(long l, boolean b, @NotNull String s, @NotNull Action<MetadataStorageWriter> action) throws MetadataStorageException {
+  public boolean updateCache(long l, boolean b, @NotNull String s, @NotNull Action<MetadataStorageWriter> action) {
     return false;
   }
 
