@@ -88,7 +88,13 @@ public class DownloadSymbolsController extends BaseController {
     final String guid = signature.substring(0, signature.length() - 1).toLowerCase(); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
-    final String projectId = findRelatedProjectId(guid);
+    final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
+    if(metadataEntry == null) {
+      LOG.debug(String.format("There is no information about symbol file %s with id %s in the index.", fileName, guid));
+      WebUtil.notFound(request, response, "File not found", null);
+      return null;
+    }
+    final String projectId = findRelatedProjectId(metadataEntry);
     if(projectId == null) {
       WebUtil.notFound(request, response, "File not found", null);
       return null;
@@ -104,7 +110,7 @@ public class DownloadSymbolsController extends BaseController {
     try {
       mySecurityContext.runAs(user, new SecurityContextEx.RunAsAction() {
         public void run() throws Throwable {
-          final BuildArtifact buildArtifact = findArtifact(guid, fileName);
+          final BuildArtifact buildArtifact = findArtifact(metadataEntry);
           if(buildArtifact == null){
             WebUtil.notFound(request, response, "Symbol file not found", null);
             LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
@@ -132,21 +138,11 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private BuildArtifact findArtifact(String guid, String fileName) {
-    final BuildMetadataEntry entry = getMetadataEntry(guid);
-    if(entry == null) {
-      LOG.debug(String.format("No items found in symbol index for guid '%s'", guid));
-      return null;
-    }
+  private BuildArtifact findArtifact(@NotNull BuildMetadataEntry entry) {
     final Map<String,String> metadata = entry.getMetadata();
     final String storedArtifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
-    final String storedFileName = metadata.get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
-    if(storedFileName == null || storedArtifactPath == null){
-      LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", guid));
-      return null;
-    }
-    if(!storedFileName.equalsIgnoreCase(fileName)){
-      LOG.debug(String.format("File name '%s' stored for guid '%s' differs from requested '%s'.", storedFileName, guid, fileName));
+    if(storedArtifactPath == null){
+      LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", entry.getKey()));
       return null;
     }
 
@@ -164,24 +160,29 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private String findRelatedProjectId(String symbolFileId) {
-    final BuildMetadataEntry metadataEntry = getMetadataEntry(symbolFileId);
-    if(metadataEntry == null) {
-      LOG.debug(String.format("There is no information about symbol file with id %s in the index.", symbolFileId));
-      return null;
-    }
+  private String findRelatedProjectId(@NotNull BuildMetadataEntry metadataEntry) {
     long buildId = metadataEntry.getBuildId();
     final SBuild build = myServer.findBuildInstanceById(buildId);
     if(build == null) {
-      LOG.debug(String.format("Failed to find build by id %d. Requested symbol file with id %s expected to be produced by that build.", buildId, symbolFileId));
+      LOG.debug(String.format("Failed to find build by id %d. Requested symbol file with id %s expected to be produced by that build.", buildId, metadataEntry.getKey()));
       return null;
     }
     return build.getProjectId();
   }
 
   @Nullable
-  private BuildMetadataEntry getMetadataEntry(String key){
+  private BuildMetadataEntry getMetadataEntry(@NotNull String key, String fileName){
+      if (fileName == null)
+        return null;
     final Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, key);
-    return !entryIterator.hasNext() ? null : entryIterator.next();
+    while (entryIterator.hasNext()) {
+      final BuildMetadataEntry entry = entryIterator.next();
+      if (entry == null)
+        continue;
+      final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
+      if (fileName.equalsIgnoreCase(entryFileName))
+          return entry;
+    }
+    return null;
   }
 }
