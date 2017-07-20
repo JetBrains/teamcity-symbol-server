@@ -26,8 +26,7 @@ public class BinaryGuidDumper {
                 final Element entry = new Element("file-sign-entry");
                 entry.setAttribute("file-path", file.getPath());
                 entry.setAttribute("file", file.getName());
-                // Multiple binaries can share the same signature, so disambiguate them by filename
-                entry.setAttribute("sign", file.getName() + "-" + signature);
+                entry.setAttribute("sign", signature);
                 root.addContent(entry);
             } catch (IOException e) {
                 buildLogger.exception(e);
