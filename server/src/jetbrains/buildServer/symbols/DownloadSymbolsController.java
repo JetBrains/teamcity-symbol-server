@@ -142,7 +142,7 @@ public class DownloadSymbolsController extends BaseController {
     final Map<String,String> metadata = entry.getMetadata();
     final String storedArtifactPath = metadata.get(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY);
     if(storedArtifactPath == null){
-      LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", entry.getKey());
+      LOG.debug(String.format("Metadata stored for guid '%s' is invalid.", entry.getKey()));
       return null;
     }
 
