@@ -88,7 +88,7 @@ public class DownloadSymbolsController extends BaseController {
     final String guid = signature.substring(0, signature.length() - 1).toLowerCase(); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
-    final String projectId = findRelatedProjectId(guid);
+    final String projectId = findRelatedProjectId(guid, fileName);
     if(projectId == null) {
       WebUtil.notFound(request, response, "File not found", null);
       return null;
@@ -133,7 +133,7 @@ public class DownloadSymbolsController extends BaseController {
 
   @Nullable
   private BuildArtifact findArtifact(String guid, String fileName) {
-    final BuildMetadataEntry entry = getMetadataEntry(guid);
+    final BuildMetadataEntry entry = getMetadataEntry(guid, fileName);
     if(entry == null) {
       LOG.debug(String.format("No items found in symbol index for guid '%s'", guid));
       return null;
@@ -164,8 +164,8 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private String findRelatedProjectId(String symbolFileId) {
-    final BuildMetadataEntry metadataEntry = getMetadataEntry(symbolFileId);
+  private String findRelatedProjectId(String symbolFileId, String fileName) {
+    final BuildMetadataEntry metadataEntry = getMetadataEntry(symbolFileId, fileName);
     if(metadataEntry == null) {
       LOG.debug(String.format("There is no information about symbol file with id %s in the index.", symbolFileId));
       return null;
@@ -177,6 +177,15 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
     return build.getProjectId();
+  }
+
+  @Nullable
+  private BuildMetadataEntry getMetadataEntry(String guid, String fileName) {
+    final BuildMetadataEntry disambiguatedEntry = getMetadataEntry(fileName.toLowerCase() + "-" + guid);
+    // Use the disambiguated guid if it exists, otherwise use the bare guid
+    if (disambiguatedEntry != null)
+      return disambiguatedEntry;
+    return getMetadataEntry(guid);
   }
 
   @Nullable
