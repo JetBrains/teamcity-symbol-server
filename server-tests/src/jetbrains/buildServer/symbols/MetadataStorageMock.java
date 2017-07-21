@@ -28,6 +28,7 @@ class MetadataStorageMock implements MetadataStorage {
       public Map<String, String> getMetadata() {
         HashMap<String, String> map = new HashMap<String, String>();
         map.put(BuildSymbolsIndexProvider.ARTIFACT_PATH_KEY, filePath);
+        map.put(BuildSymbolsIndexProvider.FILE_NAME_KEY, filePath);
         return map;
       }
     });

@@ -90,14 +90,43 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
   @Test
   public void request_pdb_unauthorized() throws Exception {
     myFixture.getLoginConfiguration().setGuestLoginAllowed(false);
-    myRequest.setRequestURI("mock", getRegisterPdbUrl("secur32.pdb", "8EF4E863187C45E78F4632152CC82FEB"));
+
+    final File artDirectory = createTempDir();
+    assertTrue(new File(artDirectory, "foo").createNewFile());;
+
+    myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
+    RunningBuildEx build = startBuild();
+    finishBuild(build, false);
+
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileName = "secur32.pdb";
+    final String filePath = "foo/secur32.pdb";
+
+    myBuildMetadataStorage.addEntry(build.getBuildId(), filePath, guid.toLowerCase());
+
+    myRequest.setRequestURI("mock", getRegisterPdbUrl(fileName, fileSignature));
     doGet();
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
   }
 
   @Test
   public void request_pdb_no_permissions_granted() throws Exception {
-    myRequest.setRequestURI("mock", getRegisterPdbUrl("secur32.pdb", "8EF4E863187C45E78F4632152CC82FEB"));
+    final File artDirectory = createTempDir();
+    assertTrue(new File(artDirectory, "foo").createNewFile());;
+
+    myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
+    RunningBuildEx build = startBuild();
+    finishBuild(build, false);
+
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileName = "secur32.pdb";
+    final String filePath = "foo/secur32.pdb";
+
+    myBuildMetadataStorage.addEntry(build.getBuildId(), filePath, guid.toLowerCase());
+
+    myRequest.setRequestURI("mock", getRegisterPdbUrl(fileName, fileSignature));
     doGet();
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
   }
@@ -127,7 +156,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     doGet();
 
     assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
-    assertEquals("Symbol file not found", myResponse.getStatusText());
+    assertEquals("File not found", myResponse.getStatusText());
   }
 
   private String getRegisterPdbUrl(String fileName, String fileSignature) throws IOException {
