@@ -7,8 +7,6 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.impl.LogUtil;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataProvider;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
-import jetbrains.buildServer.util.CollectionsUtil;
-import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.Logger;
 import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
@@ -26,10 +24,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
   public static final String PROVIDER_ID = "symbols-index-provider";
+  public static final String SIGNATURE_KEY = "sign";
   public static final String FILE_NAME_KEY = "file-name";
   public static final String ARTIFACT_PATH_KEY = "artifact-path";
 
   private static final Logger LOG = Logger.getLogger(BuildSymbolsIndexProvider.class);
+
+  @NotNull
+  public static String getMetadataKey(@NotNull String signature, @NotNull String fileName){
+    return signature + ":" + fileName;
+  }
 
   @NotNull
   public String getProviderId() {
@@ -69,9 +73,10 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
             }
           }
           final HashMap<String, String> data = new HashMap<String, String>();
+          data.put(SIGNATURE_KEY, signature);
           data.put(FILE_NAME_KEY, fileName);
           data.put(ARTIFACT_PATH_KEY, artifactPath);
-          metadataStorageWriter.addParameters(signature, data);
+          metadataStorageWriter.addParameters(getMetadataKey(signature, fileName), data);
           LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName + " build id " + buildId);
         }
         ++numSymbolFiles;
@@ -85,15 +90,12 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   @Nullable
   private String locateArtifact(@NotNull SBuild build, final @NotNull String artifactName) {
     final AtomicReference<String> locatedArtifactPath = new AtomicReference<String>(null);
-    build.getArtifacts(BuildArtifactsViewMode.VIEW_ALL_WITH_ARCHIVES_CONTENT).iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
-      @NotNull
-      public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
-        if(artifact.getName().equals(artifactName)){
-          locatedArtifactPath.set(artifact.getRelativePath());
-          return Continuation.BREAK;
-        }
-        else return Continuation.CONTINUE;
+    build.getArtifacts(BuildArtifactsViewMode.VIEW_ALL_WITH_ARCHIVES_CONTENT).iterateArtifacts(artifact -> {
+      if(artifact.getName().equals(artifactName)){
+        locatedArtifactPath.set(artifact.getRelativePath());
+        return BuildArtifacts.BuildArtifactsProcessor.Continuation.BREAK;
       }
+      else return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
     });
     return locatedArtifactPath.get();
   }

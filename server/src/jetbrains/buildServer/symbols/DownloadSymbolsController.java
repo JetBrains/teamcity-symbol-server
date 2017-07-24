@@ -85,7 +85,7 @@ public class DownloadSymbolsController extends BaseController {
 
     final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
     final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
-    final String guid = signature.substring(0, signature.length() - 1).toLowerCase(); //last symbol is PEDebugType
+    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
@@ -171,18 +171,23 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private BuildMetadataEntry getMetadataEntry(@NotNull String key, String fileName){
-      if (fileName == null)
-        return null;
-    final Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, key);
-    while (entryIterator.hasNext()) {
-      final BuildMetadataEntry entry = entryIterator.next();
-      if (entry == null)
-        continue;
-      final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
-      if (fileName.equalsIgnoreCase(entryFileName))
+  private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName){
+    String compositeMetadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
+    Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, compositeMetadataKey);
+    if(entryIterator.hasNext()){
+      return entryIterator.next();
+    } else {
+      //backward compatibility with old metadata published with signature only key
+      entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, signature);
+      while (entryIterator.hasNext()) {
+        final BuildMetadataEntry entry = entryIterator.next();
+        if (entry == null)
+          continue;
+        final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
+        if (fileName.equalsIgnoreCase(entryFileName))
           return entry;
+      }
+      return null;
     }
-    return null;
   }
 }
