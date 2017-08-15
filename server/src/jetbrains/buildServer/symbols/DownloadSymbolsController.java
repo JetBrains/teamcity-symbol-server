@@ -117,6 +117,8 @@ public class DownloadSymbolsController extends BaseController {
             return;
           }
 
+          // SC_OK is the default value on TeamCity, but I can't find this documented anywhere and the test harness has a different default, so set it explicitly just in case.
+          response.setStatus(HttpServletResponse.SC_OK);
           BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
           try {
             InputStream input = buildArtifact.getInputStream();
