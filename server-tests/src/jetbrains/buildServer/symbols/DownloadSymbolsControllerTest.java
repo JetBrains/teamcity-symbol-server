@@ -127,13 +127,13 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
   }
 
-  @DataProvider(name = "Boolean x Boolean")
+  @DataProvider(name = "Booleans")
   public static Object[][] two_bool_combinations() {
-    return new Boolean[][]{{false, false}, {false, true}, {true, false}, {true, true}};
+    return new Boolean[][]{{false}, {true}};
   }
 
-  @Test(dataProvider = "Boolean x Boolean")
-  public void request_pdb_guid_case_insensitive(boolean lowercaseSignature, boolean lowercaseGuid) throws Exception{
+  @Test(dataProvider = "Booleans")
+  public void request_pdb_guid_case_insensitive(boolean lowercaseSignature) throws Exception{
     myFixture.getServerSettings().setPerProjectPermissionsEnabled(true);
     SUser user = myFixture.getUserModel().getGuestUser();
     user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
@@ -141,11 +141,10 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
 
     final String fileSignatureUpper = "8EF4E863187C45E78F4632152CC82FEB";
     final String fileSignature = lowercaseSignature ? fileSignatureUpper.toLowerCase() : fileSignatureUpper;
-    final String guidUpper = "8EF4E863187C45E78F4632152CC82FE";
-    final String guid = lowercaseGuid ? guidUpper.toLowerCase() : guidUpper;
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
-    final byte[] fileContent = new byte[]{(byte) (lowercaseSignature ? 1 : 0), (byte) (lowercaseGuid ? 1 : 0)};
+    final byte[] fileContent = new byte[]{(byte) (lowercaseSignature ? 1 : 0)};
 
     RunningBuildEx build = startBuild();
     build.publishArtifact(filePath, fileContent);
