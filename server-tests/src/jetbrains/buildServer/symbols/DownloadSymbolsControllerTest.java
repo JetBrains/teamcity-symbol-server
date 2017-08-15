@@ -24,10 +24,13 @@ import jetbrains.buildServer.serverSide.auth.RoleScope;
 import jetbrains.buildServer.users.SUser;
 import org.apache.commons.httpclient.HttpStatus;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @author Evgeniy.Koshkin
@@ -125,32 +128,37 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
   }
 
-  @Test
-  public void request_pdb_guid_toLowerCase() throws Exception{
+  @DataProvider(name = "Boolean x Boolean")
+  public static Object[][] two_bool_combinations() {
+    return new Boolean[][]{{false, false}, {false, true}, {true, false}, {true, true}};
+  }
+
+  @Test(dataProvider = "Boolean x Boolean")
+  public void request_pdb_guid_case_insensitive(boolean lowercaseSignature, boolean lowercaseGuid) throws Exception{
     myFixture.getServerSettings().setPerProjectPermissionsEnabled(true);
     SUser user = myFixture.getUserModel().getGuestUser();
     user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
     assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
 
-    final File artDirectory = createTempDir();
-    assertTrue(new File(artDirectory, "foo").createNewFile());;
-
-    myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
-    RunningBuildEx build = startBuild();
-    finishBuild(build, false);
-
-    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
-    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileSignatureUpper = "8EF4E863187C45E78F4632152CC82FEB";
+    final String fileSignature = lowercaseSignature ? fileSignatureUpper.toLowerCase() : fileSignatureUpper;
+    final String guidUpper = "8EF4E863187C45E78F4632152CC82FE";
+    final String guid = lowercaseGuid ? guidUpper.toLowerCase() : guidUpper;
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
+    final byte[] fileContent = new byte[]{(byte) (lowercaseSignature ? 1 : 0), (byte) (lowercaseGuid ? 1 : 0)};
+
+    RunningBuildEx build = startBuild();
+    build.publishArtifact(filePath, fileContent);
+    finishBuild(build, false);
 
     myBuildMetadataStorage.addEntry(build.getBuildId(), guid.toLowerCase(), fileName, filePath);
     myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName));
 
     doGet();
 
-    assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
-    assertEquals("File not found", myResponse.getStatusText());
+    assertEquals(HttpStatus.SC_OK, myResponse.getStatus());
+    assertTrue("Returned data did not match set pdb data", Arrays.equals(fileContent, myResponse.getReturnedBytes()));
   }
 
   private String getRegisterPdbUrl(String fileSignature, String fileName, String artifactPath) throws IOException {
