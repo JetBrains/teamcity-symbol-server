@@ -25,7 +25,6 @@ import jetbrains.buildServer.users.SUser;
 import org.apache.commons.httpclient.HttpStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -166,7 +165,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     new File(artDirectory, "foo").createNewFile();
     myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
     RunningBuildEx build = startBuild();
-    myBuildMetadataStorage.addEntry(build.getBuildId(), fileSignature.substring(0, fileSignature.length() - 1), fileName, artifactPath);
+    myBuildMetadataStorage.addEntry(build.getBuildId(), PdbSignatureIndexUtil.extractGuid(fileSignature, true), fileName, artifactPath);
     return String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName);
   }
 }

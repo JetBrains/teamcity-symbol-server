@@ -15,5 +15,6 @@
     <orderEntry type="library" name="jmock" level="project" />
     <orderEntry type="library" name="TeamCity server runtime" level="project" />
     <orderEntry type="library" scope="TEST" name="spring-test" level="project" />
+    <orderEntry type="module" module-name="common" scope="TEST" />
   </component>
 </module>

@@ -49,7 +49,7 @@ class PdbSignatureIndexUtil {
     XmlUtil.saveDocument(new Document(root), outputStream);
   }
 
-  private static String extractGuid(String sign, boolean cutDebugType) {
+  public static String extractGuid(String sign, boolean cutDebugType) {
     if (cutDebugType)
       return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
     else
