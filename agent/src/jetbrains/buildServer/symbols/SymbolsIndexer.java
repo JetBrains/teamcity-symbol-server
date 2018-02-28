@@ -52,6 +52,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Nullable private BuildProgressLogger myProgressLogger;
   @Nullable private File myBuildTempDirectory;
   @Nullable private File mySrcSrvHomeDir;
+  private boolean activeBuildHasFeatureEnabled = false;
   @Nullable private FileUrlProvider myFileUrlProvider;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
@@ -71,6 +72,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           return;
         }
         LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled for build with id " + buildId);
+        activeBuildHasFeatureEnabled = true;
 
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
@@ -93,7 +95,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
         if(!isIndexingApplicable()) return;
-
+        activeBuildHasFeatureEnabled = false;
         if (myPdbFileToArtifactMap.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published for build with id " + build.getBuildId());
@@ -275,7 +277,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private boolean isIndexingApplicable() {
-    return myFileUrlProvider != null && mySrcSrvHomeDir != null;
+    return myFileUrlProvider != null && mySrcSrvHomeDir != null && activeBuildHasFeatureEnabled;
   }
 
   private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){
