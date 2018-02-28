@@ -52,8 +52,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Nullable private BuildProgressLogger myProgressLogger;
   @Nullable private File myBuildTempDirectory;
   @Nullable private File mySrcSrvHomeDir;
-  private boolean activeBuildHasFeatureEnabled = false;
   @Nullable private FileUrlProvider myFileUrlProvider;
+  private boolean myBuildHasIndexerFeature;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
                         @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
@@ -67,12 +67,13 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       @Override
       public void buildStarted(@NotNull final AgentRunningBuild runningBuild) {
         final long buildId = runningBuild.getBuildId();
-        if(runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty()){
+        myBuildHasIndexerFeature = !runningBuild.getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE).isEmpty();
+
+        if(!myBuildHasIndexerFeature) {
           LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled. No indexing will be performed for build with id " + buildId);
           return;
         }
         LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled for build with id " + buildId);
-        activeBuildHasFeatureEnabled = true;
 
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
@@ -95,7 +96,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
         if(!isIndexingApplicable()) return;
-        activeBuildHasFeatureEnabled = false;
+
         if (myPdbFileToArtifactMap.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
           LOG.debug("Symbols weren't found in artifacts to be published for build with id " + build.getBuildId());
@@ -277,7 +278,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private boolean isIndexingApplicable() {
-    return myFileUrlProvider != null && mySrcSrvHomeDir != null && activeBuildHasFeatureEnabled;
+    return myBuildHasIndexerFeature && myFileUrlProvider != null && mySrcSrvHomeDir != null;
   }
 
   private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){
