@@ -1,5 +1,6 @@
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.ExecResult;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
@@ -9,6 +10,7 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -44,8 +46,11 @@ public class PdbFilePatcher {
     if(processedFilesCount == 0){
       buildLogger.warning(String.format("Sources appeared in file %s weren't actually indexed. Looks like related binary file wasn't built during current build.", symbolsFileCanonicalPath));
     } else {
-      buildLogger.message(String.format("Information about %d source files was updated", processedFilesCount));
+      buildLogger.message(String.format("Information about %d source files will be updated", processedFilesCount));
     }
-    myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    final ExecResult result = myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
+    if (result.getExitCode() != 0) {
+      throw new IOException(String.format("Failed to update symbols file %s: %s", symbolsFile, result.getStderr()));
+    }
   }
 }
