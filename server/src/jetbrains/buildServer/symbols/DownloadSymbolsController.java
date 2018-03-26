@@ -26,16 +26,21 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Evgeniy.Koshkin
  */
 public class DownloadSymbolsController extends BaseController {
 
+  private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
   private static final String COMPRESSED_FILE_EXTENSION = "_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
-
-  private static final Logger LOG = Logger.getLogger(DownloadSymbolsController.class);
+  private static final Pattern DOWNLOAD_URL_PATTERN = Pattern.compile(
+          String.format(".*%s/?([^/]+)/([^/]+)", SymbolsConstants.APP_SYMBOLS),
+          Pattern.CASE_INSENSITIVE
+  );
 
   @NotNull private final SecurityContextEx mySecurityContext;
   @NotNull private final MetadataStorage myBuildMetadataStorage;
@@ -59,7 +64,7 @@ public class DownloadSymbolsController extends BaseController {
   @Nullable
   @Override
   protected ModelAndView doHandle(final @NotNull HttpServletRequest request, final @NotNull HttpServletResponse response) throws Exception {
-    final String requestURI = request.getRequestURI().replace("//", "/");
+    final String requestURI = request.getRequestURI();
 
     if(requestURI.endsWith(SymbolsConstants.APP_SYMBOLS)){
       response.sendError(HttpServletResponse.SC_OK, "TeamCity Symbol Server available");
@@ -75,16 +80,15 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
 
-    final String valuableUriPart = requestURI.substring(requestURI.indexOf(SymbolsConstants.APP_SYMBOLS) + SymbolsConstants.APP_SYMBOLS.length());
-    final int firstDelimiterPosition = valuableUriPart.indexOf('/');
-
-    if(firstDelimiterPosition == -1){
+    final Matcher urlMatcher = DOWNLOAD_URL_PATTERN.matcher(requestURI);
+    if (!urlMatcher.find()) {
       WebUtil.notFound(request, response, "File not found", null);
+      LOG.warn("Invalid request to symbol server: " + requestURI);
       return null;
     }
 
-    final String fileName = valuableUriPart.substring(0, firstDelimiterPosition);
-    final String signature = valuableUriPart.substring(firstDelimiterPosition + 1, valuableUriPart.indexOf('/', firstDelimiterPosition + 1));
+    final String fileName = urlMatcher.group(1);
+    final String signature = urlMatcher.group(2).toLowerCase();
     final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
@@ -131,6 +135,7 @@ public class DownloadSymbolsController extends BaseController {
         }
       });
     } catch (Throwable throwable) {
+      LOG.debug(String.format("Failed to send symbols for file %s: %s", fileName, throwable.getMessage()));
       response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, throwable.getMessage());
     }
 
