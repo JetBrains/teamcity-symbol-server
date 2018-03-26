@@ -8,6 +8,7 @@ import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
+import jetbrains.buildServer.dotNet.DotNetConstants;
 import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -21,8 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static jetbrains.buildServer.dotNet.DotNetConstants.DOTNET_FRAMEWORK_3_5;
+import java.util.regex.Pattern;
 
 /**
  * @author Evgeniy.Koshkin
@@ -31,12 +31,16 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   private static final Logger LOG = Logger.getLogger(SymbolsIndexer.class);
 
-  public static final String PDB_FILE_EXTENSION = "pdb";
-  public static final String DLL_FILE_EXTENSION = "dll";
-  public static final String EXE_FILE_EXTENSION = "exe";
+  private static final String PDB_FILE_EXTENSION = "pdb";
+  private static final String DLL_FILE_EXTENSION = "dll";
+  private static final String EXE_FILE_EXTENSION = "exe";
   private static final String X64_SRCSRV = "\\x64\\srcsrv";
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
-  public static final String NET_35_NOT_FOUND_PROBLEM_IDENTITY = "net35symbolindexing";
+  private static final String NET_45_NOT_FOUND_PROBLEM_IDENTITY = "net45symbolindexing";
+  private static final Pattern NET_4X_PATTERN = Pattern.compile(
+          String.format("%s\\.\\d+.*", DotNetConstants.DOTNET_FRAMEWORK_4),
+          Pattern.CASE_INSENSITIVE
+  );
 
   @NotNull private final ArtifactsWatcher myArtifactsWatcher;
   @NotNull private final ArtifactPathHelper myArtifactPathHelper;
@@ -282,9 +286,9 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){
-    for (String parameterName : agentConfiguration.getConfigurationParameters().keySet()){
-      if(parameterName.startsWith(DOTNET_FRAMEWORK_3_5)) return;
+    for (String parameterName : agentConfiguration.getConfigurationParameters().keySet()) {
+      if(NET_4X_PATTERN.matcher(parameterName).find()) return;
     }
-    logger.logBuildProblem(BuildProblemData.createBuildProblem(NET_35_NOT_FOUND_PROBLEM_IDENTITY, BuildProblemTypes.TC_ERROR_MESSAGE_TYPE, ".NET 3.5 runtime required for symbols indexing was not found on build agent."));
+    logger.logBuildProblem(BuildProblemData.createBuildProblem(NET_45_NOT_FOUND_PROBLEM_IDENTITY, BuildProblemTypes.TC_ERROR_MESSAGE_TYPE, ".NET 4.5 runtime required for symbols indexing was not found on build agent."));
   }
 }

@@ -53,7 +53,7 @@ namespace JetBrains.CommandLine.Symbols
       }
     }
 
-    private static IEnumerable<FileSystemPath> LoadPathsFromFile(FileSystemPath inputFilePath)
+    private static ICollection<FileSystemPath> LoadPathsFromFile(FileSystemPath inputFilePath)
     {
       ICollection<FileSystemPath> result = new HashSet<FileSystemPath>();
       inputFilePath.ReadTextStream(streamReader =>

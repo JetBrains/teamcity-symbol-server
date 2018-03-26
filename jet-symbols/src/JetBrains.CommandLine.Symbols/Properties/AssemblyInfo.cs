@@ -9,4 +9,3 @@ using System.Security.Permissions;
 [assembly: ComVisible(false)]
 [assembly: AssemblyTitle("Symbols")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]

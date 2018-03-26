@@ -7,7 +7,7 @@
     <ProjectGuid>{66E56E2A-5CFC-455E-A0AF-0CC8DCBFD528}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AssemblyName>JetBrains.CommandLine.Symbols</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <ApplicationVersion>1.0.0.0</ApplicationVersion>
     <FileAlignment>512</FileAlignment>
     <RootNamespace>JetBrains.CommandLine.Symbols</RootNamespace>
@@ -36,15 +36,21 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="JetBrains.Platform.Symbols.Util">
-      <HintPath>..\..\lib\JetBrains.Platform.Symbols.Util.dll</HintPath>
-    </Reference>
+  <ItemGroup>    
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
-    <Reference Include="JetBrains.Platform.Symbols.Metadata">
-      <HintPath>..\..\lib\JetBrains.Platform.Symbols.Metadata.dll</HintPath>
+    <Reference Include="JetBrains.Platform.Core">
+      <HintPath>..\..\lib\JetBrains.Platform.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="JetBrains.Platform.Interop.WinApi">
+      <HintPath>..\..\lib\JetBrains.Platform.Interop.WinApi.dll</HintPath>
+    </Reference>
+    <Reference Include="JetBrains.Platform.Metadata">
+      <HintPath>..\..\lib\JetBrains.Platform.Metadata.dll</HintPath>
+    </Reference>
+    <Reference Include="JetBrains.Platform.Util">
+      <HintPath>..\..\lib\JetBrains.Platform.Util.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

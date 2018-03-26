@@ -10,26 +10,21 @@ namespace JetBrains.CommandLine.Symbols
   {
     public const string CMD_NAME = "dumpSymbolSign";
 
-    public DumpSymbolsFileSignCommand(FileSystemPath outputFilePath, IEnumerable<FileSystemPath> targetFilePaths)
+    public DumpSymbolsFileSignCommand(FileSystemPath outputFilePath, ICollection<FileSystemPath> targetFilePaths)
       : base(outputFilePath, targetFilePaths)
     {
     }
 
     protected override string GetFileSignature(FileSystemPath targetFilePath)
     {
-      try
+      var debugInfo = PdbUtils.TryGetPdbDebugInfo(targetFilePath);
+      if (debugInfo == null)
       {
-        using (Stream pdbStream = targetFilePath.OpenFileForReading())
-        {
-          var root = new PdbFile(pdbStream).GetRoot();
-          return string.Format("{0}{1:X}", root.SymId.ToString("N").ToUpperInvariant(), root.Age);
-        }
-      }
-      catch (Exception ex)
-      {
-        Console.Error.WriteLine(ex);
+        Console.Error.WriteLine("Unsupport PDB file " + targetFilePath);
         return null;
       }
+
+      return string.Format("{0}{1:X}", debugInfo.Signature.ToString("N").ToUpperInvariant(), debugInfo.AgeOrTimestamp);
     }
   }
 }

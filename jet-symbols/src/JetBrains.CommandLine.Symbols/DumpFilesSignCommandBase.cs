@@ -9,9 +9,9 @@ namespace JetBrains.CommandLine.Symbols
   public abstract class DumpFilesSignCommandBase : ICommand
   {
     private readonly FileSystemPath myOutputFilePath;
-    private readonly IEnumerable<FileSystemPath> myTargetFilePaths;
+    private readonly ICollection<FileSystemPath> myTargetFilePaths;
 
-    protected DumpFilesSignCommandBase(FileSystemPath outputFilePath, IEnumerable<FileSystemPath> targetFilePaths)
+    protected DumpFilesSignCommandBase(FileSystemPath outputFilePath, ICollection<FileSystemPath> targetFilePaths)
     {
       myOutputFilePath = outputFilePath;
       myTargetFilePaths = targetFilePaths;
@@ -26,13 +26,22 @@ namespace JetBrains.CommandLine.Symbols
           Console.Error.WriteLine("Output file path is empty.");
           return 1;
         }
-        var dictionary = myTargetFilePaths.ToDictionary(targetFilePath => targetFilePath, GetFileSignature);
+
+        var dictionary = new Dictionary<FileSystemPath, string>(myTargetFilePaths.Count);
+        foreach (var targetFilePath in myTargetFilePaths)
+        {
+          var fileSignature = GetFileSignature(targetFilePath);
+          if (string.IsNullOrEmpty(fileSignature)) continue;
+          dictionary.Add(targetFilePath, fileSignature);
+        }
+        
         if (!dictionary.IsEmpty())
         {
           WriteToFile(myOutputFilePath, dictionary);
           Console.Out.WriteLine("Dumped {0} signature entries to the file {1}", dictionary.Count, myOutputFilePath);
           return 0;
         }
+        
         Console.Error.WriteLine("Nothing to dump.");
         return 1;
       }
@@ -53,9 +62,7 @@ namespace JetBrains.CommandLine.Symbols
         XmlElement element = node.CreateElement("file-sign-entry");
         element.CreateAttributeWithNonEmptyValue("file-path", signature.Key.FullPath);
         element.CreateAttributeWithNonEmptyValue("file", signature.Key.Name);
-        string str = signature.Value;
-        if (str != null)
-          element.CreateAttributeWithNonEmptyValue("sign", str);
+        element.CreateAttributeWithNonEmptyValue("sign", signature.Value);
       }
       xmlDocument.AppendChild(node);
       using (XmlWriter w = XmlWriter.Create(outputFilePath.FullPath))
