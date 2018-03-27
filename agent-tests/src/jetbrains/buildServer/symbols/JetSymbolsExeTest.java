@@ -32,16 +32,30 @@ public class JetSymbolsExeTest extends BaseTestCase {
   @Test
   public void testCmdParametersLengthLimit() throws Exception {
     final File output = FileUtil.createTempFile("testCmdParametersLengthLimit", ".out");
-    final int dumpExitCode = myExe.dumpPdbGuidsToFile(getFilesCollection(500), output, new NullBuildProgressLogger());
-    assertEquals(0, dumpExitCode);
+    final StringBuilder warnings = new StringBuilder();
+    final int dumpExitCode = myExe.dumpPdbGuidsToFile(getFilesCollection(500), output, new NullBuildProgressLogger() {
+      @Override
+      public void warning(String message) {
+        warnings.append(message).append("\n");
+      }
+    });
+    assertEquals(1, dumpExitCode);
+    assertTrue(warnings.indexOf("Nothing to dump.") > 0);
   }
 
   @Test
   public void testSpacesInPaths() throws Exception {
     final File output = FileUtil.createTempFile("test spaces in paths", ".out");
     final File input = FileUtil.createTempFile("test spaces in paths", ".in");
-    final int exitCode = myExe.dumpPdbGuidsToFile(Collections.singleton(input), output, new NullBuildProgressLogger());
-    assertEquals(0, exitCode);
+    final StringBuilder warnings = new StringBuilder();
+    final int exitCode = myExe.dumpPdbGuidsToFile(Collections.singleton(input), output, new NullBuildProgressLogger() {
+      @Override
+      public void warning(String message) {
+        warnings.append(message).append("\n");
+      }
+    });
+    assertEquals(1, exitCode);
+    assertTrue(warnings.indexOf("Nothing to dump.") > 0);
   }
 
   private Collection<File> getFilesCollection(int count) throws IOException {

@@ -63,7 +63,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     doGet();
 
     assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
-    assertEquals("Symbol file not found", myResponse.getStatusText());
+    assertEquals("File not found", myResponse.getStatusText());
   }
 
   @Test
@@ -99,9 +99,11 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     finishBuild(build, false);
 
     final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
 
+    myBuildMetadataStorage.addEntry(build.getBuildId(), guid.toLowerCase(), fileName, filePath);
     myRequest.setRequestURI("mock", getRegisterPdbUrl(fileSignature, fileName, filePath));
     doGet();
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
@@ -117,9 +119,11 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     finishBuild(build, false);
 
     final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
 
+    myBuildMetadataStorage.addEntry(build.getBuildId(), guid.toLowerCase(), fileName, filePath);
     myRequest.setRequestURI("mock", getRegisterPdbUrl(fileSignature, fileName, filePath));
     doGet();
     assertEquals(HttpStatus.SC_UNAUTHORIZED, myResponse.getStatus());
@@ -150,7 +154,7 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     doGet();
 
     assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
-    assertEquals("File not found", myResponse.getStatusText());
+    assertEquals("Symbol file not found", myResponse.getStatusText());
   }
 
   private String getRegisterPdbUrl(String fileSignature, String fileName, String artifactPath) throws IOException {
