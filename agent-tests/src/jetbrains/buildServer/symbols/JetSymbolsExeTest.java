@@ -40,7 +40,7 @@ public class JetSymbolsExeTest extends BaseTestCase {
       }
     });
     assertEquals(1, dumpExitCode);
-    assertTrue(warnings.indexOf("Nothing to dump.") > 0);
+    assertTrue(warnings.toString(),warnings.indexOf("Nothing to dump.") > 0);
   }
 
   @Test
@@ -55,7 +55,7 @@ public class JetSymbolsExeTest extends BaseTestCase {
       }
     });
     assertEquals(1, exitCode);
-    assertTrue(warnings.indexOf("Nothing to dump.") > 0);
+    assertTrue(warnings.toString(),warnings.indexOf("Nothing to dump.") > 0);
   }
 
   private Collection<File> getFilesCollection(int count) throws IOException {

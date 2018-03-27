@@ -17,6 +17,18 @@ namespace JetBrains.CommandLine.Symbols
 
     protected override string GetFileSignature(FileSystemPath targetFilePath)
     {
+      if (!targetFilePath.ExistsFile)
+      {
+        Console.Error.WriteLine("PDB file does not exists " + targetFilePath);
+        return null;
+      }
+      
+      if (targetFilePath.GetFileLength() == 0)
+      {
+        Console.Error.WriteLine("Empty PDB file " + targetFilePath);
+        return null;
+      }
+      
       var debugInfo = PdbUtils.TryGetPdbDebugInfo(targetFilePath);
       if (debugInfo == null)
       {
