@@ -14,8 +14,8 @@ teamcity {
 kotlin { experimental { coroutines 'enable' } }
 
 dependencies {
-    agent project(path: ':symbol-server-agent', configuration: 'plugin')
-    compile project(':symbol-server-common')
+    agent project(path: ':teamcity-symbol-agent', configuration: 'plugin')
+    compile project(':teamcity-symbol-common')
 
     provided "org.jetbrains.teamcity.internal:server:$teamcityVersion"
     provided files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/web.jar")

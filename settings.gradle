@@ -1,6 +1,6 @@
 rootProject.name = 'teamcity-symbol-server'
 
-include 'symbol-server-agent'
-include 'symbol-server-common'
-include 'symbol-server-server'
+include 'teamcity-symbol-agent'
+include 'teamcity-symbol-common'
+include 'teamcity-symbol-server'
 include 'jet-symbols'

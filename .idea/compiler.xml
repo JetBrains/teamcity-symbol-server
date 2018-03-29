@@ -14,6 +14,10 @@
       <module name="teamcity-google-agent_test" target="1.8" />
       <module name="teamcity-symbol-agent_main" target="1.8" />
       <module name="teamcity-symbol-agent_test" target="1.8" />
+      <module name="teamcity-symbol-common_main" target="1.7" />
+      <module name="teamcity-symbol-common_test" target="1.7" />
+      <module name="teamcity-symbol-server-teamcity-symbol-server_main" target="1.8" />
+      <module name="teamcity-symbol-server-teamcity-symbol-server_test" target="1.8" />
       <module name="teamcity-symbol-server_main" target="1.8" />
       <module name="teamcity-symbol-server_test" target="1.8" />
     </bytecodeTargetLevel>
