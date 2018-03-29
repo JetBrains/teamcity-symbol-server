@@ -1,0 +1,10 @@
+plugins{
+    id 'com.github.rodm.teamcity-common' version "1.0"
+}
+
+teamcity {
+    version = teamcityVersion
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7

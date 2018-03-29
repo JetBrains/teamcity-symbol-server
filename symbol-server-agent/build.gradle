@@ -1,0 +1,37 @@
+plugins {
+    id 'com.github.rodm.teamcity-agent' version "1.0"
+}
+
+teamcity {
+    version = teamcityVersion
+    agent {
+        descriptor = project.file('teamcity-agent-plugin.xml')
+        files {
+            into('bin') {
+                from (project(':jet-symbols').file('out')) {
+                    include '**/*.exe'
+                    include '**/*.dll'
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    compile project(':symbol-server-common')
+    provided "org.jetbrains.teamcity.internal:agent:$teamcityVersion"
+    testCompile 'org.testng:testng:6.8'
+    testCompile 'org.jmock:jmock:2.5.1'
+    testCompile 'org.jmock:jmock-legacy:2.5.1'
+    testCompile "org.jetbrains.teamcity:tests-support:$teamcityVersion"
+}
+
+agentPlugin.version = null
+agentPlugin.baseName = 'symbol-server'
+
+build.dependsOn(":jet-symbols:msbuild")
+
+compileKotlin {
+    sourceCompatibility = JavaVersion.VERSION_1_6
+    targetCompatibility = JavaVersion.VERSION_1_6
+}

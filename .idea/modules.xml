@@ -2,13 +2,21 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/agent/agent.iml" filepath="$PROJECT_DIR$/agent/agent.iml" />
-      <module fileurl="file://$PROJECT_DIR$/agent-tests/agent-tests.iml" filepath="$PROJECT_DIR$/agent-tests/agent-tests.iml" />
-      <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
-      <module fileurl="file://$PROJECT_DIR$/idea-resolve-helper.iml" filepath="$PROJECT_DIR$/idea-resolve-helper.iml" />
-      <module fileurl="file://$PROJECT_DIR$/server/server.iml" filepath="$PROJECT_DIR$/server/server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/server-tests/server-tests.iml" filepath="$PROJECT_DIR$/server-tests/server-tests.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols.iml" filepath="$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols.iml" group="jet-symbols" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols_main.iml" filepath="$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols_main.iml" group="jet-symbols" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols_test.iml" filepath="$PROJECT_DIR$/.idea/modules/jet-symbols/jet-symbols_test.iml" group="jet-symbols" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent.iml" group="symbol-server-agent" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent_main.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent_main.iml" group="symbol-server-agent" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent_test.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-agent/symbol-server-agent_test.iml" group="symbol-server-agent" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common.iml" group="symbol-server-common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common_main.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common_main.iml" group="symbol-server-common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common_test.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-common/symbol-server-common_test.iml" group="symbol-server-common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server.iml" group="symbol-server-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server_main.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server_main.iml" group="symbol-server-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server_test.iml" filepath="$PROJECT_DIR$/.idea/modules/symbol-server-server/symbol-server-server_test.iml" group="symbol-server-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/teamcity-symbol-server.iml" filepath="$PROJECT_DIR$/.idea/modules/teamcity-symbol-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/teamcity-symbol-server_main.iml" filepath="$PROJECT_DIR$/.idea/modules/teamcity-symbol-server_main.iml" group="teamcity-symbol-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/teamcity-symbol-server_test.iml" filepath="$PROJECT_DIR$/.idea/modules/teamcity-symbol-server_test.iml" group="teamcity-symbol-server" />
     </modules>
   </component>
 </project>
-

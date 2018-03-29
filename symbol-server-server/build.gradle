@@ -1,0 +1,39 @@
+plugins {
+    id 'com.github.rodm.teamcity-server' version "1.0"
+}
+
+teamcity {
+    version = teamcityVersion
+
+    server {
+        descriptor = project.file('teamcity-server-plugin.xml')
+        tokens = [Version: project.version]
+    }
+}
+
+kotlin { experimental { coroutines 'enable' } }
+
+dependencies {
+    agent project(path: ':symbol-server-agent', configuration: 'plugin')
+    compile project(':symbol-server-common')
+
+    provided "org.jetbrains.teamcity.internal:server:$teamcityVersion"
+    provided files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/web.jar")
+
+    testCompile 'org.testng:testng:6.8'
+    testCompile files("${teamcityDir}/devPackage/tests/tests-integration.jar")
+    testRuntime fileTree(dir: "${teamcityDir}/devPackage/tests/", include: ['*.jar'])
+    testRuntime fileTree(dir: "${teamcityDir}/webapps/ROOT/WEB-INF/lib/", include: ['*.jar'])
+}
+
+serverPlugin.version = null
+serverPlugin.baseName = 'symbol-server'
+
+compileKotlin {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
