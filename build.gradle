@@ -10,7 +10,7 @@ ext {
     teamcityVersion = project.findProperty('teamcityVersion') ?: '2017.1'
     teamcityDir = project.findProperty('teamcityDir') ?: "$rootDir/servers/TeamCity-${teamcityVersion}"
     if (teamcityDir == null || !file(teamcityDir).isDirectory()) {
-        throw new InvalidUserDataException('Please, execute gradle task `:nuget-server:installTeamCity` ' +
+        throw new InvalidUserDataException('Please, execute gradle task `:teamcity-symbol-server:installTeamCity` ' +
                 'or specify correct `teamcityDir` path in gradle.properties file')
     }
     teamcityDir = teamcityDir.replace("\\", "/")

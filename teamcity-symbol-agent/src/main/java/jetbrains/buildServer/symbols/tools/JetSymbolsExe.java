@@ -66,9 +66,7 @@ public class JetSymbolsExe {
     if (execResult.getExitCode() == 0) {
       return CollectionsUtil.convertAndFilterNulls(Arrays.asList(execResult.getOutLines()), new Converter<File, String>() {
         public File createFrom(@NotNull String source) {
-          final File file = new File(source);
-          if (file.isFile()) return file;
-          return null; //last string is not a source file path
+          return new File(source);
         }
       });
     }
