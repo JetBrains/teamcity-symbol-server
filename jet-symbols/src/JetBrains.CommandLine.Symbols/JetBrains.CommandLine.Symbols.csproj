@@ -36,21 +36,18 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <ItemGroup>    
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
     <Reference Include="JetBrains.Platform.Core">
-      <HintPath>..\..\lib\JetBrains.Platform.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="JetBrains.Platform.Interop.WinApi">
-      <HintPath>..\..\lib\JetBrains.Platform.Interop.WinApi.dll</HintPath>
+      <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2017.3.5\tools\JetBrains.Platform.Core.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Platform.Metadata">
-      <HintPath>..\..\lib\JetBrains.Platform.Metadata.dll</HintPath>
+      <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2017.3.5\tools\JetBrains.Platform.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Platform.Util">
-      <HintPath>..\..\lib\JetBrains.Platform.Util.dll</HintPath>
+      <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2017.3.5\tools\JetBrains.Platform.Util.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -60,6 +57,9 @@
     <Compile Include="DumpSymbolsFileSignCommand.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

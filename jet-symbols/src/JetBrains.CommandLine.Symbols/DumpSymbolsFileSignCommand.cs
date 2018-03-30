@@ -1,8 +1,7 @@
-﻿using JetBrains.Metadata.Utils.Pdb;
-using JetBrains.Util;
+﻿using JetBrains.Util;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using JetBrains.Metadata.Debug.Pdb;
 
 namespace JetBrains.CommandLine.Symbols
 {
