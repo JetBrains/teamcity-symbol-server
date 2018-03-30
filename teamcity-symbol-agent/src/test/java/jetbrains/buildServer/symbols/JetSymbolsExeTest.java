@@ -4,6 +4,7 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.NullBuildProgressLogger;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.FileUtil;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -56,6 +57,18 @@ public class JetSymbolsExeTest extends BaseTestCase {
     });
     assertEquals(1, exitCode);
     assertTrue(warnings.toString(),warnings.indexOf("Nothing to dump.") > 0);
+  }
+
+  @Test
+  public void testListSourcesFromWindowsPdb() {
+    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/JetBrains.CommandLine.Symbols.pdb"));
+    Assert.assertEquals(files.size(), 5);
+  }
+
+  @Test
+  public void testListSourcesFromPortablePdb() {
+    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/WindowsAzure.StorageExtensions.pdb"));
+    Assert.assertEquals(files.size(), 45);
   }
 
   private Collection<File> getFilesCollection(int count) throws IOException {

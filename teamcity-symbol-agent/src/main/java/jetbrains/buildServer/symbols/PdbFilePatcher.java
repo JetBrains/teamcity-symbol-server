@@ -2,9 +2,9 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.ExecResult;
 import jetbrains.buildServer.agent.BuildProgressLogger;
+import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExeCommands;
-import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -23,17 +23,17 @@ public class PdbFilePatcher {
   private final File myWorkingDir;
   private final SrcSrvStreamBuilder mySrcSrvStreamBuilder;
   private final PdbStrExe myPdbStrExe;
-  private final SrcToolExe mySrcToolExe;
+  private final JetSymbolsExe myJetSymbolsExe;
 
   public PdbFilePatcher(@NotNull final File workingDir, @NotNull final File srcSrvHomeDir, @NotNull final SrcSrvStreamBuilder srcSrvStreamBuilder) {
     myWorkingDir = workingDir;
     mySrcSrvStreamBuilder = srcSrvStreamBuilder;
     myPdbStrExe = new PdbStrExe(srcSrvHomeDir);
-    mySrcToolExe = new SrcToolExe(srcSrvHomeDir);
+    myJetSymbolsExe = new JetSymbolsExe(srcSrvHomeDir);
   }
 
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
-    final Collection<File> sourceFiles = mySrcToolExe.getReferencedSourceFiles(symbolsFile);
+    final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile);
     final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
     if(sourceFiles.isEmpty()){
       final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;

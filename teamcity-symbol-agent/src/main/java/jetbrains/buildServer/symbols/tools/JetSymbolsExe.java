@@ -4,18 +4,27 @@ import com.intellij.execution.configurations.GeneralCommandLine;
 import jetbrains.buildServer.ExecResult;
 import jetbrains.buildServer.SimpleCommandLineProcessRunner;
 import jetbrains.buildServer.agent.BuildProgressLogger;
+import jetbrains.buildServer.util.CollectionsUtil;
+import jetbrains.buildServer.util.Converter;
 import jetbrains.buildServer.util.FileUtil;
+import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * @author Evgeniy.Koshkin
  */
 public class JetSymbolsExe {
 
+  private static final Logger LOG = Logger.getLogger(JetSymbolsExe.class);
   private static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   private static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
+  private static final String LIST_SOURCES_CMD = "listSources";
   private final File myExePath;
 
   public JetSymbolsExe(File homeDir) {
@@ -45,6 +54,30 @@ public class JetSymbolsExe {
       }
     }
     return exitCode;
+  }
+
+  public Collection<File> getReferencedSourceFiles(File symbolsFile) {
+    final GeneralCommandLine commandLine = new GeneralCommandLine();
+    commandLine.setExePath(myExePath.getPath());
+    commandLine.addParameter(LIST_SOURCES_CMD);
+    commandLine.addParameter(symbolsFile.getAbsolutePath());
+    final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
+
+    if (execResult.getExitCode() == 0) {
+      return CollectionsUtil.convertAndFilterNulls(Arrays.asList(execResult.getOutLines()), new Converter<File, String>() {
+        public File createFrom(@NotNull String source) {
+          final File file = new File(source);
+          if (file.isFile()) return file;
+          return null; //last string is not a source file path
+        }
+      });
+    }
+
+    LOG.info("Failed to read references source in file " + symbolsFile +
+      "\nStdout: " + execResult.getStdout() +
+      "\nStderr: " + execResult.getStderr());
+
+    return Collections.emptyList();
   }
 
   private File dumpPathsToFile(Collection<File> files) throws IOException {

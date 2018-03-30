@@ -37,20 +37,37 @@ namespace JetBrains.CommandLine.Symbols
     private static ICommand GetCommandToExecute(string[] args, out string error)
     {
       error = String.Empty;
-      var str = args.First();
-      var inputFilePath = FileSystemPath.TryParse(args[2].Substring(3));
-      var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
-      var targetFilePaths = LoadPathsFromFile(inputFilePath);
-      switch (str)
+      var commandName = args.First();
+      switch (commandName)
       {
         case DumpSymbolsFileSignCommand.CMD_NAME:
+        {
+          var targetFilePaths = GetTargetFilePaths(args);
+          var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
           return new DumpSymbolsFileSignCommand(outputFilePath, targetFilePaths);
+        }
+          
         case DumpBinaryFileSignCommand.CMD_NAME:
+        {
+          var targetFilePaths = GetTargetFilePaths(args);
+          var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
           return new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
+        }
+          
+        case ListReferencesSourcesCommand.CMD_NAME:
+          return new ListReferencesSourcesCommand(FileSystemPath.TryParse(args[1]));
+        
         default:
-          error = String.Format("{0} command is unknown.", str);
+          error = String.Format("{0} command is unknown.", commandName);
           return null;
       }
+    }
+
+    private static ICollection<FileSystemPath> GetTargetFilePaths(string[] args)
+    {
+      var inputFilePath = FileSystemPath.TryParse(args[2].Substring(3));
+      var targetFilePaths = LoadPathsFromFile(inputFilePath);
+      return targetFilePaths;
     }
 
     private static ICollection<FileSystemPath> LoadPathsFromFile(FileSystemPath inputFilePath)

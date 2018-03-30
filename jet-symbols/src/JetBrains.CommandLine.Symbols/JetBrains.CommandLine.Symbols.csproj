@@ -51,6 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ListReferencesSourcesCommand.cs" />
     <Compile Include="ICommand.cs" />
     <Compile Include="DumpFilesSignCommandBase.cs" />
     <Compile Include="DumpBinaryFileSignCommand.cs" />
