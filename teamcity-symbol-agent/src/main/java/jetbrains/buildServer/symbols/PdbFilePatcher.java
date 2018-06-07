@@ -19,28 +19,31 @@ import java.util.Collection;
 public class PdbFilePatcher {
 
   private static final Logger LOG = Logger.getLogger(PdbFilePatcher.class);
-
   private final File myWorkingDir;
   private final SrcSrvStreamBuilder mySrcSrvStreamBuilder;
   private final PdbStrExe myPdbStrExe;
   private final JetSymbolsExe myJetSymbolsExe;
 
-  public PdbFilePatcher(@NotNull final File workingDir, @NotNull final File srcSrvHomeDir, @NotNull final SrcSrvStreamBuilder srcSrvStreamBuilder) {
+  public PdbFilePatcher(@NotNull final File workingDir,
+                        @NotNull final File srcSrvHomeDir,
+                        @NotNull final SrcSrvStreamBuilder srcSrvStreamBuilder,
+                        @NotNull final JetSymbolsExe jetSymbolsExe) {
     myWorkingDir = workingDir;
     mySrcSrvStreamBuilder = srcSrvStreamBuilder;
     myPdbStrExe = new PdbStrExe(srcSrvHomeDir);
-    myJetSymbolsExe = new JetSymbolsExe(srcSrvHomeDir);
+    myJetSymbolsExe = jetSymbolsExe;
   }
 
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
-    final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile);
+    final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile, buildLogger);
     final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
     if(sourceFiles.isEmpty()){
       final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;
       buildLogger.warning(message);
-      LOG.debug(message);
+      LOG.warn(message);
       return;
     }
+
     final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
     int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
     if(processedFilesCount == 0){
@@ -48,6 +51,7 @@ public class PdbFilePatcher {
     } else {
       buildLogger.message(String.format("Information about %d source files will be updated", processedFilesCount));
     }
+
     final ExecResult result = myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
     if (result.getExitCode() != 0) {
       throw new IOException(String.format("Failed to update symbols file %s: %s", symbolsFile, result.getStderr()));

@@ -9,6 +9,7 @@ import jetbrains.buildServer.agent.impl.artifacts.ArtifactsBuilderAdapter;
 import jetbrains.buildServer.agent.impl.artifacts.ArtifactsCollection;
 import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
 import jetbrains.buildServer.dotNet.DotNetConstants;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -47,15 +48,15 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
   @NotNull private final JetSymbolsExe myJetSymbolsExe;
 
-  @NotNull private final Map<File, String> myPdbFileToArtifactMap = new ConcurrentHashMap<File, String>();
-  @NotNull private final Set<PdbSignatureIndexEntry> myPdbFileSignatures = new ConcurrentHashSet<PdbSignatureIndexEntry>();
+  @NotNull private final Map<File, String> myPdbFileToArtifactMap = new ConcurrentHashMap<>();
+  @NotNull private final Set<PdbSignatureIndexEntry> myPdbFileSignatures = new ConcurrentHashSet<>();
 
-  @NotNull private final Map<File, String> myBinaryFileToArtifactMap = new ConcurrentHashMap<File, String>();
-  @NotNull private final Set<PdbSignatureIndexEntry> myBinaryFileSignatures = new ConcurrentHashSet<PdbSignatureIndexEntry>();
+  @NotNull private final Map<File, String> myBinaryFileToArtifactMap = new ConcurrentHashMap<>();
+  @NotNull private final Set<PdbSignatureIndexEntry> myBinaryFileSignatures = new ConcurrentHashSet<>();
 
-  @Nullable private BuildProgressLogger myProgressLogger;
-  @Nullable private File myBuildTempDirectory;
-  @Nullable private File mySrcSrvHomeDir;
+  private BuildProgressLogger myProgressLogger;
+  private File myBuildTempDirectory;
+  private File mySrcSrvHomeDir;
   @Nullable private FileUrlProvider myFileUrlProvider;
   private boolean myBuildHasIndexerFeature;
 
@@ -99,7 +100,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       @Override
       public void afterAtrifactsPublished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
         super.afterAtrifactsPublished(build, buildStatus);
-        if(!isIndexingApplicable()) return;
+        if (isIndexingDisabled()) return;
 
         if (myPdbFileToArtifactMap.isEmpty()) {
           myProgressLogger.warning("Symbols weren't found in artifacts to be published.");
@@ -158,7 +159,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
       @NotNull
       private Set<PdbSignatureIndexEntry> getSignatureIndexEntries(Set<PdbSignatureIndexEntry> signatureLocalFilesData, Map<File, String> artifactMap) {
-        final Set<PdbSignatureIndexEntry> indexData = new HashSet<PdbSignatureIndexEntry>();
+        final Set<PdbSignatureIndexEntry> indexData = new HashSet<>();
         for(PdbSignatureIndexEntry signatureIndexEntry : signatureLocalFilesData){
           final String artifactPath = signatureIndexEntry.getArtifactPath();
           if(artifactPath == null) continue;
@@ -175,30 +176,44 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Override
   public void afterCollectingFiles(@NotNull List<ArtifactsCollection> artifacts) {
     super.afterCollectingFiles(artifacts);
-    if(!isIndexingApplicable()){
+    if (isIndexingDisabled()) {
       LOG.debug("Symbols and sources indexing skipped.");
       return;
     }
 
-    LOG.debug("Searching for symbol files in publishing artifacts.");
-    processPdbArtifacts(getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION));
+    final String blockName = "Indexing symbol sources";
+    try {
+      myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
 
-    LOG.debug("Searching for binary files in publishing *.exe artifacts.");
-    processBinaryArtifacts(artifacts, EXE_FILE_EXTENSION);
+      LOG.debug("Searching for symbol files in publishing artifacts.");
+      processPdbArtifacts(getArtifactPathsByFileExtension(artifacts, PDB_FILE_EXTENSION));
 
-    LOG.debug("Searching for binary files in publishing *.dll artifacts.");
-    processBinaryArtifacts(artifacts, DLL_FILE_EXTENSION);
+      LOG.debug("Searching for binary files in publishing *.exe artifacts.");
+      processBinaryArtifacts(artifacts, EXE_FILE_EXTENSION);
+
+      LOG.debug("Searching for binary files in publishing *.dll artifacts.");
+      processBinaryArtifacts(artifacts, DLL_FILE_EXTENSION);
+    } finally {
+      myProgressLogger.logMessage(DefaultMessagesInfo.createBlockEnd(blockName, "symbol-server"));
+    }
   }
 
   private void processPdbArtifacts(Map<File, String> pdbFiles) {
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuildTempDirectory, mySrcSrvHomeDir, new SrcSrvStreamBuilder(myFileUrlProvider, myProgressLogger));
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuildTempDirectory,
+      mySrcSrvHomeDir,
+      new SrcSrvStreamBuilder(myFileUrlProvider, myProgressLogger),
+      myJetSymbolsExe
+    );
+
     for(File pdbFile : pdbFiles.keySet()){
       if(myPdbFileToArtifactMap.containsKey(pdbFile)){
         LOG.debug(String.format("File %s already processed. Skipped.", pdbFile.getAbsolutePath()));
         continue;
       }
+      final String blockName = "Pdb file";
+      myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
       try {
-        myProgressLogger.message("Indexing sources appeared in file " + pdbFile.getAbsolutePath());
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
         pdbFilePatcher.patch(pdbFile, myProgressLogger);
         final String artifactPath = myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName());
         final PdbSignatureIndexEntry signatureIndexEntry = getPdbSignature(pdbFile);
@@ -208,6 +223,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         LOG.error("Error occurred while processing symbols file " + pdbFile, e);
         myProgressLogger.error("Error occurred while processing symbols file " + pdbFile);
         myProgressLogger.exception(e);
+      } finally {
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockEnd(blockName, "symbol-server"));
       }
     }
   }
@@ -219,7 +236,10 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         LOG.debug(String.format("File %s already processed. Skipped.", binaryFile.getAbsolutePath()));
         continue;
       }
+      final String blockName = "Binary file";
+      myProgressLogger.message("Indexing binary file " + binaryFile.getAbsolutePath());
       try {
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
         final String artifactPath = myArtifactPathHelper.concatenateArtifactPath(binaryFiles.get(binaryFile), binaryFile.getName());
         final PdbSignatureIndexEntry signatureIndexEntry = getBinarySignature(binaryFile);
         myBinaryFileToArtifactMap.put(binaryFile, artifactPath);
@@ -228,6 +248,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         LOG.error("Error occurred while processing binary file " + binaryFile, e);
         myProgressLogger.error("Error occurred while processing binary file " + binaryFile);
         myProgressLogger.exception(e);
+      } finally {
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockEnd(blockName, "symbol-server"));
       }
     }
   }
@@ -269,7 +291,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private Map<File, String> getArtifactPathsByFileExtension(List<ArtifactsCollection> artifactsCollections, String fileExtension){
-    final Map<File, String> result = new HashMap<File, String>();
+    final Map<File, String> result = new HashMap<>();
     for(ArtifactsCollection artifactsCollection : artifactsCollections){
       if(artifactsCollection.isEmpty()) continue;
       final Map<File, String> filePathMap = artifactsCollection.getFilePathMap();
@@ -281,8 +303,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     return result;
   }
 
-  private boolean isIndexingApplicable() {
-    return myBuildHasIndexerFeature && myFileUrlProvider != null && mySrcSrvHomeDir != null;
+  private boolean isIndexingDisabled() {
+    return !myBuildHasIndexerFeature || myFileUrlProvider == null || mySrcSrvHomeDir == null;
   }
 
   private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){

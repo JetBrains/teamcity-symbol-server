@@ -61,13 +61,13 @@ public class JetSymbolsExeTest extends BaseTestCase {
 
   @Test
   public void testListSourcesFromWindowsPdb() {
-    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/JetBrains.CommandLine.Symbols.pdb"));
+    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/JetBrains.CommandLine.Symbols.pdb"), new NullBuildProgressLogger());
     Assert.assertEquals(files.size(), 5);
   }
 
   @Test
   public void testListSourcesFromPortablePdb() {
-    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/WindowsAzure.StorageExtensions.pdb"));
+    Collection<File> files = myExe.getReferencedSourceFiles(new File("src/test/resources/testData/WindowsAzure.StorageExtensions.pdb"), new NullBuildProgressLogger());
     Assert.assertEquals(files.size(), 45);
   }
 

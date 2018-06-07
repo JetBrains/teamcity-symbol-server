@@ -5,10 +5,7 @@ import jetbrains.buildServer.ExecResult;
 import jetbrains.buildServer.SimpleCommandLineProcessRunner;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.util.CollectionsUtil;
-import jetbrains.buildServer.util.Converter;
 import jetbrains.buildServer.util.FileUtil;
-import org.apache.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +18,6 @@ import java.util.Collections;
  */
 public class JetSymbolsExe {
 
-  private static final Logger LOG = Logger.getLogger(JetSymbolsExe.class);
   private static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   private static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
   private static final String LIST_SOURCES_CMD = "listSources";
@@ -37,45 +33,42 @@ public class JetSymbolsExe {
     commandLine.addParameter(DUMP_SYMBOL_SIGN_CMD);
     commandLine.addParameter(String.format("/o=%s", output.getPath()));
     commandLine.addParameter(String.format("/i=%s", dumpPathsToFile(files).getPath()));
+
+    final ExecResult execResult = executeCommandLine(commandLine, buildLogger);
+    if (execResult.getExitCode() == 0 && !execResult.getStdout().isEmpty()) {
+      buildLogger.message("Stdout: " + execResult.getStdout());
+    }
+
+    return execResult.getExitCode();
+  }
+
+  public Collection<File> getReferencedSourceFiles(File symbolsFile, BuildProgressLogger buildLogger) {
+    final GeneralCommandLine commandLine = new GeneralCommandLine();
+    commandLine.setExePath(myExePath.getPath());
+    commandLine.addParameter(LIST_SOURCES_CMD);
+    commandLine.addParameter(symbolsFile.getAbsolutePath());
+
+    final ExecResult execResult = executeCommandLine(commandLine, buildLogger);
+    if (execResult.getExitCode() == 0) {
+      return CollectionsUtil.convertAndFilterNulls(Arrays.asList(execResult.getOutLines()), File::new);
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+  private ExecResult executeCommandLine(GeneralCommandLine commandLine, BuildProgressLogger buildLogger) {
     buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
     final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
-    final String stdout = execResult.getStdout();
-    if(!stdout.isEmpty()){
-      buildLogger.message("Stdout: " + stdout);
-    }
-    final int exitCode = execResult.getExitCode();
-    if (exitCode != 0) {
-      buildLogger.warning(String.format("%s ends with non-zero exit code %s.", SYMBOLS_EXE, execResult));
-      buildLogger.warning("Stdout: " + stdout);
+    if (execResult.getExitCode() != 0) {
+      buildLogger.warning(String.format("%s completed with exit code %s.", SYMBOLS_EXE, execResult));
+      buildLogger.warning("Stdout: " + execResult.getStdout());
       buildLogger.warning("Stderr: " + execResult.getStderr());
       final Throwable exception = execResult.getException();
       if(exception != null){
         buildLogger.exception(exception);
       }
     }
-    return exitCode;
-  }
-
-  public Collection<File> getReferencedSourceFiles(File symbolsFile) {
-    final GeneralCommandLine commandLine = new GeneralCommandLine();
-    commandLine.setExePath(myExePath.getPath());
-    commandLine.addParameter(LIST_SOURCES_CMD);
-    commandLine.addParameter(symbolsFile.getAbsolutePath());
-    final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
-
-    if (execResult.getExitCode() == 0) {
-      return CollectionsUtil.convertAndFilterNulls(Arrays.asList(execResult.getOutLines()), new Converter<File, String>() {
-        public File createFrom(@NotNull String source) {
-          return new File(source);
-        }
-      });
-    }
-
-    LOG.info("Failed to read references source in file " + symbolsFile +
-      "\nStdout: " + execResult.getStdout() +
-      "\nStderr: " + execResult.getStderr());
-
-    return Collections.emptyList();
+    return execResult;
   }
 
   private File dumpPathsToFile(Collection<File> files) throws IOException {
