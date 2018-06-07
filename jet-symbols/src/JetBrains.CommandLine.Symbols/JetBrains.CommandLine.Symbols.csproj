@@ -44,7 +44,7 @@
       <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2018.1.2\tools\JetBrains.Platform.Core.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Platform.Metadata">
-      <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2018.1.2\tools\JetBrains.Platform.Metadata.dll</HintPath>
+      <HintPath>..\..\lib\JetBrains.Platform.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Platform.Util">
       <HintPath>..\..\packages\JetBrains.ReSharper.CommandLineTools.2018.1.2\tools\JetBrains.Platform.Util.dll</HintPath>
