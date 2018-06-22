@@ -83,7 +83,9 @@ public class DownloadSymbolsController extends BaseController {
     final Matcher urlMatcher = DOWNLOAD_URL_PATTERN.matcher(requestURI);
     if (!urlMatcher.find()) {
       WebUtil.notFound(request, response, "File not found", null);
-      LOG.warn("Invalid request to symbol server: " + requestURI);
+      if (!requestURI.endsWith("index2.txt")) {
+        LOG.warn("Invalid request to symbol server: " + requestURI);
+      }
       return null;
     }
 
