@@ -2,37 +2,48 @@ package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.ExtensionHolder;
 import jetbrains.buildServer.agent.impl.artifacts.ArchivePreprocessor;
-import jetbrains.buildServer.util.CollectionsUtil;
-import jetbrains.buildServer.util.filters.Filter;
+import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Created by Evgeniy.Koshkin.
  */
 public class ArtifactPathHelper {
-    private static final String ARCHIVE_PATH_SEPARATOR = "!";
-    private static final String ARCHIVE_PATH_SEPARATOR_FULL = "!/";
-    private static final String FOLDER_SEPARATOR = "/";
+  private static final String ARCHIVE_PATH_SEPARATOR = "!";
+  private static final String ARCHIVE_PATH_SEPARATOR_FULL = "!/";
+  private static final String FOLDER_SEPARATOR = "/";
 
-    private final ExtensionHolder myExtensions;
+  private final ExtensionHolder myExtensions;
 
-    public ArtifactPathHelper(@NotNull final ExtensionHolder extensions) {
-        myExtensions = extensions;
+  public ArtifactPathHelper(@NotNull final ExtensionHolder extensions) {
+    myExtensions = extensions;
+  }
+
+  @NotNull
+  String concatenateArtifactPath(@NotNull final String fileNamePrefix, @NotNull final String pdbFileName) {
+    final String normalizedFileNamePrefix = fileNamePrefix.replace(ARCHIVE_PATH_SEPARATOR, ARCHIVE_PATH_SEPARATOR_FULL);
+    if (StringUtil.isEmpty(normalizedFileNamePrefix)) {
+      return pdbFileName;
     }
 
-    @NotNull
-    String concatenateArtifactPath(String fileNamePrefix, String pdbFileName) {
-      final String normilizedFileNamePrefix = fileNamePrefix.replace(ARCHIVE_PATH_SEPARATOR, ARCHIVE_PATH_SEPARATOR_FULL);
-      final String delimiter = (isPathToArchive(normilizedFileNamePrefix) && !normilizedFileNamePrefix.contains(ARCHIVE_PATH_SEPARATOR)) ? ARCHIVE_PATH_SEPARATOR_FULL : FOLDER_SEPARATOR;
-        return normilizedFileNamePrefix + delimiter + pdbFileName;
+    final String archivePath = getArchivePath(normalizedFileNamePrefix);
+    if (archivePath == null || normalizedFileNamePrefix.contains(ARCHIVE_PATH_SEPARATOR_FULL)) {
+      return normalizedFileNamePrefix + FOLDER_SEPARATOR + pdbFileName;
     }
 
-    private boolean isPathToArchive(@NotNull final String path){
-        return CollectionsUtil.contains(myExtensions.getExtensions(ArchivePreprocessor.class), new Filter<ArchivePreprocessor>() {
-            @Override
-            public boolean accept(@NotNull ArchivePreprocessor data) {
-                return data.shouldProcess(path);
-            }
-        });
+    return archivePath + ARCHIVE_PATH_SEPARATOR +
+      StringUtil.trimStart(normalizedFileNamePrefix, archivePath) + FOLDER_SEPARATOR +
+      pdbFileName;
+  }
+
+  @Nullable
+  private String getArchivePath(@NotNull final String path) {
+    for (ArchivePreprocessor preprocessor : myExtensions.getExtensions(ArchivePreprocessor.class)) {
+      final String targetPath = preprocessor.getTargetKey(path);
+      if (StringUtil.isEmpty(targetPath)) continue;
+      return targetPath;
     }
+    return null;
+  }
 }
