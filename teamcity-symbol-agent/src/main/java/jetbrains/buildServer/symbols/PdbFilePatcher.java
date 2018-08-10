@@ -37,7 +37,7 @@ public class PdbFilePatcher {
   public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
     final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile, buildLogger);
     final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
-    if(sourceFiles.isEmpty()){
+    if (sourceFiles.isEmpty()) {
       final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;
       buildLogger.warning(message);
       LOG.warn(message);
@@ -45,16 +45,20 @@ public class PdbFilePatcher {
     }
 
     final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
-    int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
-    if(processedFilesCount == 0){
-      buildLogger.warning(String.format("Sources appeared in file %s weren't actually indexed. Looks like related binary file wasn't built during current build.", symbolsFileCanonicalPath));
-    } else {
-      buildLogger.message(String.format("Information about %d source files will be updated", processedFilesCount));
-    }
+    try {
+      int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
+      if (processedFilesCount == 0) {
+        buildLogger.message(String.format("No local source files were found for pdb file %s. Looks like related binary file was not built during the current build.", symbolsFileCanonicalPath));
+      } else {
+        buildLogger.message(String.format("Information about %d source files will be updated.", processedFilesCount));
+      }
 
-    final ExecResult result = myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
-    if (result.getExitCode() != 0) {
-      throw new IOException(String.format("Failed to update symbols file %s: %s", symbolsFile, result.getStderr()));
+      final ExecResult result = myPdbStrExe.doCommand(PdbStrExeCommands.WRITE, symbolsFile, tmpFile, PdbStrExe.SRCSRV_STREAM_NAME);
+      if (result.getExitCode() != 0) {
+        throw new IOException(String.format("Failed to update symbols file %s: %s", symbolsFile, result.getStderr()));
+      }
+    } finally {
+      FileUtil.delete(tmpFile);
     }
   }
 }
