@@ -49,6 +49,7 @@ public class PdbFilePatcher {
       int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
       if (processedFilesCount == 0) {
         buildLogger.message(String.format("No local source files were found for pdb file %s. Looks like related binary file was not built during the current build.", symbolsFileCanonicalPath));
+        return;
       } else {
         buildLogger.message(String.format("Information about %d source files will be updated.", processedFilesCount));
       }
