@@ -1,5 +1,6 @@
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,8 +29,8 @@ public class FileUrlProvider {
   }
 
   @Nullable
-  public String getFileUrl(File file) throws IOException {
-    final File canonicalFile = file.getCanonicalFile();
+  public String getFileUrl(File file) {
+    final File canonicalFile = FileUtil.getCanonicalFile(file);
     final String canonicalFilePath = canonicalFile.getPath();
     if(!canonicalFilePath.startsWith(mySourcesRootDirectoryCanonicalPath)){
       LOG.debug(String.format("Failed to construct URL for file %s. It locates outside of source root directory %s.", canonicalFile, mySourcesRootDirectoryCanonicalPath));
