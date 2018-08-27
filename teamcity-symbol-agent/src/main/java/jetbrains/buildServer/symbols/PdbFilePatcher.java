@@ -34,22 +34,30 @@ public class PdbFilePatcher {
     myJetSymbolsExe = jetSymbolsExe;
   }
 
-  public void patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
+  /**
+   * Executes patching process.
+   *
+   * @param symbolsFile is a source PDB file.
+   * @param buildLogger is a build logger.
+   * @return true if file was patched, otherwise false.
+   * @throws Exception is error has happen during patching process.
+   */
+  public boolean patch(File symbolsFile, BuildProgressLogger buildLogger) throws Exception {
     final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile, buildLogger);
     final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
     if (sourceFiles.isEmpty()) {
       final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;
       buildLogger.warning(message);
       LOG.warn(message);
-      return;
+      return false;
     }
 
     final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
     try {
       int processedFilesCount = mySrcSrvStreamBuilder.dumpStreamToFile(tmpFile, sourceFiles);
       if (processedFilesCount == 0) {
-        buildLogger.message(String.format("No local source files were found for pdb file %s. Looks like related binary file was not built during the current build.", symbolsFileCanonicalPath));
-        return;
+        buildLogger.message(String.format("No local source files were found for pdb file %s. Looks like it was not produced during the current build.", symbolsFileCanonicalPath));
+        return false;
       } else {
         buildLogger.message(String.format("Information about %d source files will be updated.", processedFilesCount));
       }
@@ -61,5 +69,7 @@ public class PdbFilePatcher {
     } finally {
       FileUtil.delete(tmpFile);
     }
+
+    return true;
   }
 }
