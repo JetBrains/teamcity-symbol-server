@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -23,8 +22,23 @@ import java.util.function.Function;
 public class SymbolsCache {
 
   private static final Logger LOG = Logger.getLogger(SymbolsCache.class);
+
+  /**
+   * Contains the map of cached requests to symbol server metadata storage.
+   *
+   * The key is a composite PDB entry key, see BuildSymbolsIndexProvider#getMetadataKey.
+   * The value is a build metadata entry or empty value if entry was not found.
+   */
   private final Cache<String, Optional<BuildMetadataEntry>> myCachedRequests;
-  private final ConcurrentMap<Long, ConcurrentLinkedQueue<String>> myCachedKeysByBuildId = new ConcurrentHashMap<>();
+
+  /**
+   * Contains the map of cached composite keys by build id used during cleanup on event
+   * BuildServerListener#buildArtifactsChanged(jetbrains.buildServer.serverSide.SBuild).
+   *
+   * The key is a build id.
+   * The value is a set of cached composite keys.
+   */
+  private final ConcurrentMap<Long, Collection<String>> myCachedKeysByBuildId = new ConcurrentHashMap<>();
 
   public SymbolsCache(@NotNull final EventDispatcher<BuildServerListener> events) {
     final int cacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ENTRIES_SIZE, 256);
@@ -65,14 +79,19 @@ public class SymbolsCache {
                                      @NotNull final Function<String, BuildMetadataEntry> function) {
     final Optional<BuildMetadataEntry> metadataEntry = myCachedRequests.get(key, s -> {
       LOG.debug("Creating symbols cache for entry with key: " + s);
+
+      // Calculate build metadata entry
       final BuildMetadataEntry entry = function.apply(s);
       if (entry == null) {
         return Optional.empty();
       }
+
+      // Cache affected composite key for this build
       final Collection<String> keys = myCachedKeysByBuildId.computeIfAbsent(
-        entry.getBuildId(), buildId -> new ConcurrentLinkedQueue<>()
+        entry.getBuildId(), buildId -> ConcurrentHashMap.newKeySet()
       );
       keys.add(s);
+
       return Optional.of(entry);
     });
 
