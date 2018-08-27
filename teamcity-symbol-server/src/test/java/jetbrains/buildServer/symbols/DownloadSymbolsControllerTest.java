@@ -48,7 +48,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
   protected BaseController createController() throws IOException {
     AuthorizationInterceptor authInterceptor = myFixture.getSingletonService(AuthorizationInterceptor.class);
     AuthHelper authHelper = new AuthHelper(myFixture.getLoginConfiguration(), myFixture.getUserModel(), myFixture.getSingletonService(HttpAuthenticationManager.class));
-    return new DownloadSymbolsController(myServer, myWebManager, authInterceptor,  myFixture.getSecurityContext(), myBuildMetadataStorage, authHelper);
+    SymbolsCache symbolsCache = new SymbolsCache(myFixture.getEventDispatcher());
+    return new DownloadSymbolsController(myServer, myWebManager, authInterceptor,  myFixture.getSecurityContext(), myBuildMetadataStorage, authHelper, symbolsCache);
   }
 
   @Test

@@ -29,6 +29,11 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   public static final String ARTIFACT_PATH_KEY = "artifact-path";
 
   private static final Logger LOG = Logger.getLogger(BuildSymbolsIndexProvider.class);
+  private final SymbolsCache mySymbolsCache;
+
+  public BuildSymbolsIndexProvider(@NotNull final SymbolsCache symbolsCache) {
+    mySymbolsCache = symbolsCache;
+  }
 
   @NotNull
   public static String getMetadataKey(@NotNull String signature, @NotNull String fileName){
@@ -76,7 +81,11 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
           data.put(SIGNATURE_KEY, signature);
           data.put(FILE_NAME_KEY, fileName);
           data.put(ARTIFACT_PATH_KEY, artifactPath);
-          metadataStorageWriter.addParameters(getMetadataKey(signature, fileName), data);
+
+          final String metadataKey = getMetadataKey(signature, fileName);
+          metadataStorageWriter.addParameters(metadataKey, data);
+          mySymbolsCache.removeEntry(metadataKey);
+
           LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName + " build id " + buildId);
         }
         ++numSymbolFiles;
