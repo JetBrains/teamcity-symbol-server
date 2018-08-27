@@ -14,4 +14,7 @@ public class SymbolsConstants {
 
   public static final String SYMBOL_SIGNATURES_FILE_NAME_PREFIX = "symbol-signatures-artifacts-";
   public static final String BINARY_SIGNATURES_FILE_NAME_PREFIX = "binary-signatures-artifacts-";
+
+  public static final String SYMBOLS_SERVER_CACHE_ENTRIES_SIZE = "teamcity.symbolServer.cache.entriesSize";
+  public static final String SYMBOLS_SERVER_CACHE_EXPIRATION_TIME_SEC = "teamcity.symbolServer.cache.expirationTime.sec";
 }

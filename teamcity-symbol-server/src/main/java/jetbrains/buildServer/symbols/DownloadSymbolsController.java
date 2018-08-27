@@ -1,10 +1,13 @@
 package jetbrains.buildServer.symbols;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SecurityContextEx;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.auth.Permission;
@@ -26,6 +29,8 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +50,7 @@ public class DownloadSymbolsController extends BaseController {
   @NotNull private final SecurityContextEx mySecurityContext;
   @NotNull private final MetadataStorage myBuildMetadataStorage;
   @NotNull private final AuthHelper myAuthHelper;
+  private final Cache<String, Optional<BuildMetadataEntry>> myCachedRequests;
 
   public DownloadSymbolsController(@NotNull SBuildServer server,
                                    @NotNull WebControllerManager controllerManager,
@@ -59,6 +65,15 @@ public class DownloadSymbolsController extends BaseController {
     final String path = SymbolsConstants.APP_SYMBOLS + "**";
     controllerManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
+
+    final int cacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ENTRIES_SIZE, 256);
+    final int expirationTimeSec = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_EXPIRATION_TIME_SEC, 60 * 60);
+    myCachedRequests = Caffeine.newBuilder()
+      .maximumSize(cacheSize)
+      .executor(Runnable::run)
+      .expireAfterAccess(expirationTimeSec, TimeUnit.SECONDS)
+      .initialCapacity(cacheSize)
+      .build();
   }
 
   @Nullable
@@ -179,22 +194,29 @@ public class DownloadSymbolsController extends BaseController {
 
   @Nullable
   private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName){
-    String compositeMetadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
-    Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, compositeMetadataKey);
-    if(entryIterator.hasNext()){
-      return entryIterator.next();
-    } else {
-      //backward compatibility with old metadata published with signature only key
-      entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, signature);
-      while (entryIterator.hasNext()) {
-        final BuildMetadataEntry entry = entryIterator.next();
-        if (entry == null)
-          continue;
-        final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
-        if (fileName.equalsIgnoreCase(entryFileName))
-          return entry;
+    final String compositeMetadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
+    final Optional<BuildMetadataEntry> metadataEntry = myCachedRequests.get(compositeMetadataKey, s -> {
+      Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(
+        BuildSymbolsIndexProvider.PROVIDER_ID, compositeMetadataKey);
+      if (entryIterator.hasNext()) {
+        return Optional.of(entryIterator.next());
+      } else {
+        //backward compatibility with old metadata published with signature only key
+        entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, signature);
+        while (entryIterator.hasNext()) {
+          final BuildMetadataEntry entry = entryIterator.next();
+          if (entry == null)
+            continue;
+          final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
+          if (fileName.equalsIgnoreCase(entryFileName))
+            return Optional.of(entry);
+        }
+        return Optional.empty();
       }
-      return null;
+    });
+    if (metadataEntry != null && metadataEntry.isPresent()) {
+      return metadataEntry.get();
     }
+    return null;
   }
 }
