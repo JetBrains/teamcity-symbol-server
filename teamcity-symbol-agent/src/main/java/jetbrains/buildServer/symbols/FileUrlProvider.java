@@ -1,11 +1,11 @@
 package jetbrains.buildServer.symbols;
 
 import jetbrains.buildServer.util.FileUtil;
+import jetbrains.buildServer.util.StringUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * @author Evgeniy.Koshkin
@@ -18,10 +18,10 @@ public class FileUrlProvider {
   private final long myBuildId;
   private String mySourcesRootDirectoryCanonicalPath;
 
-  public FileUrlProvider(String serverUrl, long buildId, File sourcesRootDirectory) throws IOException {
-    myUrlPrefix = serverUrl;
+  public FileUrlProvider(String serverUrl, long buildId, File sourcesRootDirectory) {
+    myUrlPrefix = StringUtil.trimEnd(serverUrl, "/"); //cut last '/';
     myBuildId = buildId;
-    mySourcesRootDirectoryCanonicalPath = sourcesRootDirectory.getCanonicalPath();
+    mySourcesRootDirectoryCanonicalPath = FileUtil.getCanonicalFile(sourcesRootDirectory).getPath();
   }
 
   public String getHttpAlias() {
@@ -30,12 +30,13 @@ public class FileUrlProvider {
 
   @Nullable
   public String getFileUrl(File file) {
-    final File canonicalFile = FileUtil.getCanonicalFile(file);
-    final String canonicalFilePath = canonicalFile.getPath();
-    if(!canonicalFilePath.startsWith(mySourcesRootDirectoryCanonicalPath)){
-      LOG.debug(String.format("Failed to construct URL for file %s. It locates outside of source root directory %s.", canonicalFile, mySourcesRootDirectoryCanonicalPath));
+    final String canonicalFilePath = FileUtil.getCanonicalFile(file).getPath();
+    if (!canonicalFilePath.startsWith(mySourcesRootDirectoryCanonicalPath)) {
+      LOG.debug(String.format("Failed to construct URL for file %s. It locates outside of source root directory %s.",
+        canonicalFilePath, mySourcesRootDirectoryCanonicalPath));
       return null;
     }
-    return canonicalFilePath.substring(mySourcesRootDirectoryCanonicalPath.length() + 1).replace(File.separator, "/");
+    return canonicalFilePath.substring(mySourcesRootDirectoryCanonicalPath.length() + 1)
+      .replace(File.separator, "/");
   }
 }
