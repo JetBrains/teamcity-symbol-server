@@ -22,6 +22,7 @@ import jetbrains.buildServer.serverSide.RunningBuildEx;
 import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.serverSide.auth.RoleScope;
 import jetbrains.buildServer.users.SUser;
+import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.HttpStatus;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -156,6 +157,44 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
 
     assertEquals(HttpStatus.SC_NOT_FOUND, myResponse.getStatus());
     assertEquals("Symbol file not found", myResponse.getStatusText());
+  }
+
+  @Test
+  public void request_file_with_plus_sign() throws Exception{
+    myFixture.getServerSettings().setPerProjectPermissionsEnabled(true);
+
+    SUser user = myFixture.getUserModel().getGuestUser();
+    user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
+    assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
+
+    final File artDirectory = createTempDir();
+    final String fileName = "file++.pdb";
+    File file = new File(artDirectory, fileName);
+    assertTrue(file.createNewFile());
+    FileUtil.writeFile(file, "text", "UTF-8");
+
+    myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
+    RunningBuildEx build = startBuild();
+    build.publishArtifact(fileName, file);
+    finishBuild(build, false);
+
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
+    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+
+    myBuildMetadataStorage.addEntry(build.getBuildId(), guid.toLowerCase(), fileName, fileName);
+    myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName));
+
+    doGet();
+
+    assertEquals(-1, myResponse.getStatus());
+    assertEquals("text", myResponse.getReturnedContent());
+
+    myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", "file%2b%2b.pdb", fileSignature, fileName));
+
+    doGet();
+
+    assertEquals(-1, myResponse.getStatus());
+    assertEquals("text", myResponse.getReturnedContent());
   }
 
   private String getRegisterPdbUrl(String fileSignature, String fileName, String artifactPath) throws IOException {

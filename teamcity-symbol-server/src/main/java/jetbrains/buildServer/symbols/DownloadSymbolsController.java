@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -92,7 +93,8 @@ public class DownloadSymbolsController extends BaseController {
       return null;
     }
 
-    final String fileName = urlMatcher.group(1);
+    final String encodedFileName = urlMatcher.group(1).replaceAll("\\+", "%2b");
+    final String fileName = URLDecoder.decode(encodedFileName, "UTF-8");
     final String signature = urlMatcher.group(2).toLowerCase();
     final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
