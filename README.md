@@ -16,9 +16,10 @@ You can download the plugin and install it as [an additional TeamCity plugin](ht
 
 | Branch | Status | Download | TeamCity |
 |--------|--------|----------|----------|
-| Master | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk/.lastSuccessful/symbol-server.zip?guest=1)| master |
+| master | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk/.lastSuccessful/symbol-server.zip?guest=1)| 2018.2.x |
+| Indore-2018.1.x | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_Build20181x&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_Build20181x)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_Build20181x/.lastSuccessful/symbol-server.zip?guest=1)| 2018.1.x |
 | Indore-2017.2.x | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_Build20172x&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_Build20172x)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_Build20172x/.lastSuccessful/symbol-server.zip?guest=1)| 2017.2.x |
-| Indore-2017.1.x | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_Build20171x&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_Build20171x)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_Build20171x/.lastSuccessful/symbol-server.zip?guest=1)| 2017.1.x |
+
 
 ## Requirements
 
