@@ -77,7 +77,11 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
               LOG.debug(String.format("Located artifact by name %s, path - %s. Build - %s", fileName, artifactPath, LogUtil.describe(sBuild)));
             }
           }
-          final HashMap<String, String> data = new HashMap<String, String>();
+
+          LOG.info(String.format(
+            "Indexing symbol file %s with signature %s of build %s", fileName, signature, LogUtil.describe(sBuild)
+          ));
+          final HashMap<String, String> data = new HashMap<>();
           data.put(SIGNATURE_KEY, signature);
           data.put(FILE_NAME_KEY, fileName);
           data.put(ARTIFACT_PATH_KEY, artifactPath);
@@ -85,8 +89,6 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
           final String metadataKey = getMetadataKey(signature, fileName);
           metadataStorageWriter.addParameters(metadataKey, data);
           mySymbolsCache.removeEntry(metadataKey);
-
-          LOG.debug("Stored symbol file signature " + signature + " for file name " + fileName + " build id " + buildId);
         }
         ++numSymbolFiles;
       }
