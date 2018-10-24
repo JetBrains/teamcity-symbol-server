@@ -24,8 +24,12 @@ public class FileUrlProvider {
     mySourcesRootDirectoryCanonicalPath = FileUtil.getCanonicalFile(sourcesRootDirectory).getPath();
   }
 
-  public String getHttpAlias() {
-    return String.format("%s/builds/id-%d/sources/files", myUrlPrefix, myBuildId);
+  public String getBuildPath() {
+    return String.format("builds/id-%d/sources/files", myBuildId);
+  }
+
+  public String getBasePath() {
+    return myUrlPrefix;
   }
 
   @Nullable
