@@ -13,6 +13,7 @@ import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.Predicate;
+import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
 import org.apache.log4j.Logger;
@@ -39,7 +40,7 @@ public class DownloadSymbolsController extends BaseController {
   private static final String COMPRESSED_FILE_EXTENSION = "_";
   private static final String FILE_POINTER_FILE_EXTENSION = "ptr";
   private static final Pattern DOWNLOAD_URL_PATTERN = Pattern.compile(
-          String.format(".*%s/?([^/]+)/([^/]+)", SymbolsConstants.APP_SYMBOLS),
+          String.format(".*%s/([^/]+)/([^/]+)", SymbolsConstants.APP_SYMBOLS),
           Pattern.CASE_INSENSITIVE
   );
 
@@ -60,7 +61,7 @@ public class DownloadSymbolsController extends BaseController {
     myBuildMetadataStorage = buildMetadataStorage;
     myAuthHelper = authHelper;
     mySymbolsCache = symbolsCache;
-    final String path = SymbolsConstants.APP_SYMBOLS + "**";
+    final String path = SymbolsConstants.APP_SYMBOLS + "/**";
     controllerManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
   }
@@ -68,18 +69,17 @@ public class DownloadSymbolsController extends BaseController {
   @Nullable
   @Override
   protected ModelAndView doHandle(final @NotNull HttpServletRequest request, final @NotNull HttpServletResponse response) throws Exception {
-    final String requestURI = request.getRequestURI();
+    final String requestURI = StringUtil.removeTailingSlash(request.getRequestURI());
 
-    if(requestURI.endsWith(SymbolsConstants.APP_SYMBOLS)){
-      response.sendError(HttpServletResponse.SC_OK, "TeamCity Symbol Server available");
-      return null;
+    if (requestURI.endsWith(SymbolsConstants.APP_SYMBOLS)) {
+      return simpleView("TeamCity symbol server is running");
     }
 
-    if(requestURI.endsWith(COMPRESSED_FILE_EXTENSION)){
+    if (requestURI.endsWith(COMPRESSED_FILE_EXTENSION)) {
       WebUtil.notFound(request, response, "File not found", null);
       return null;
     }
-    if(requestURI.endsWith(FILE_POINTER_FILE_EXTENSION)){
+    if (requestURI.endsWith(FILE_POINTER_FILE_EXTENSION)) {
       WebUtil.notFound(request, response, "File not found", null);
       return null;
     }

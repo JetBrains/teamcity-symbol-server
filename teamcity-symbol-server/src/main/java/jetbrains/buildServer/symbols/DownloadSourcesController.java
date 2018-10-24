@@ -48,7 +48,7 @@ public class DownloadSourcesController extends BaseController {
                                    @NotNull AuthHelper authHelper) {
     super(server);
     myAuthHelper = authHelper;
-    final String path = SymbolsConstants.APP_SOURCES + "**";
+    final String path = SymbolsConstants.APP_SOURCES + "/**";
     webManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
   }
