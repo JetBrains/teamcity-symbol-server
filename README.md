@@ -75,6 +75,12 @@ RUN Invoke-WebRequest https://download.microsoft.com/download/5/A/0/5A08CEF4-3EC
 ### Failed to find Source Server tools home directory
 Please ensure that [Debugging tools for Windows](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/index) were installed on the build agent.
 
+### Unable to view symbols in IDE
+
+* Ensure that required PDB file was indexed during the build by navigating to the [hidden TeamCity build artifacts](https://confluence.jetbrains.com/display/TCDL/Build+Artifact#BuildArtifact-HiddenArtifacts) and inspect the xml files under `./teamcity/symbols/` directory. In the xml file `sign` attribute contains file signature and `file` atttribute contains file name.
+* Navigate in your browser to the page `http://%teamcity%/app/symbols/%pdbFileName%/%fileSignature%/%pdbFileName%` and check that pdb file was downloaded.
+* Ensure that IDE use correct credentials to access TeamCity server. Normally VS uses Windows Credentials Manager to get and store credentials. Failed authentication attemps are logged in the `teamcity-auth.log` file.
+
 ## Build
 
 This project uses gradle as a build system. You can easily open it in [IntelliJ IDEA](https://www.jetbrains.com/idea/help/importing-project-from-gradle-model.html) or [Eclipse](http://gradle.org/eclipse/).
