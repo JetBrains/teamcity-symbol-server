@@ -79,7 +79,7 @@ Please ensure that [Debugging tools for Windows](https://docs.microsoft.com/en-u
 
 * Ensure that required PDB file was indexed during the build by navigating to the [hidden TeamCity build artifacts](https://confluence.jetbrains.com/display/TCDL/Build+Artifact#BuildArtifact-HiddenArtifacts) and inspect the xml files under `./teamcity/symbols/` directory. In the xml file `sign` attribute contains file signature and `file` atttribute contains file name.
 * Navigate in your browser to the page `http://%teamcity%/app/symbols/%pdbFileName%/%fileSignature%/%pdbFileName%` and check that pdb file was downloaded.
-* Ensure that IDE use correct credentials to access TeamCity server. Normally VS uses Windows Credentials Manager to get and store credentials. Failed authentication attemps are logged in the `teamcity-auth.log` file.
+* Ensure that IDE use correct credentials to access TeamCity server. Normally VS uses Windows Credentials Manager to get and store credentials. Failed authentication attemps are logged in the `teamcity-auth.log` [server log file](https://confluence.jetbrains.com/display/TCDL/TeamCity+Server+Logs).
 
 ## Build
 
