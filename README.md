@@ -70,6 +70,15 @@ RUN Invoke-WebRequest https://download.microsoft.com/download/5/A/0/5A08CEF4-3EC
     Remove-Item -Force winsdksetup.exe
 ```
 
+### Overriding source server paths
+
+If the URL of your Teamcity server changes, source indexing will not work for old builds because the old PDB files will still be referencing the old Teamcity URL.  To fix this, you can override the Teamcity source path using the [srcsrv.ini file](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/the-srcsrv-ini-file#using_a_different_location_or_file_name).  In the `[variables]` section, set `TEAMCITY_BASE_PATH` to the sources path of the new Teamcity server.  For example:
+
+```ini
+[variables]
+TEAMCITY_BASE_PATH=https://new_teamcity.example.com/app/sources
+```
+
 ## Common Problems
 
 ### Failed to find Source Server tools home directory
