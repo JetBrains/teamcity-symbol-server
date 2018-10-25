@@ -32,8 +32,7 @@ public class SrcSrvStreamBuilder {
       fileWriter.write("SRCSRV: variables ------------------------------------------\r\n");
       fileWriter.write("SRCSRVVERCTRL=http\r\n");
       fileWriter.write(String.format("TEAMCITY_BASE_PATH=%s\r\n", myUrlProvider.getBasePath()));
-      fileWriter.write(String.format("TEAMCITY_BUILD_PATH=%s\r\n", myUrlProvider.getBuildPath()));
-      fileWriter.write("HTTP_ALIAS=%TEAMCITY_BASE_PATH%/%TEAMCITY_BUILD_PATH%\r\n");
+      fileWriter.write(String.format("HTTP_ALIAS=%TEAMCITY_BASE_PATH%/%s\r\n", myUrlProvider.getBuildPath()));
       fileWriter.write("HTTP_EXTRACT_TARGET=%HTTP_ALIAS%/%var2%\r\n");
       fileWriter.write("SRCSRVTRG=%HTTP_EXTRACT_TARGET%\r\n");
       fileWriter.write("SRCSRVCMD=\r\n");
