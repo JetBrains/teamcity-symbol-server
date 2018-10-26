@@ -1,5 +1,6 @@
 package jetbrains.buildServer.symbols;
 
+import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
@@ -7,14 +8,11 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.impl.LogUtil;
 import jetbrains.buildServer.serverSide.metadata.BuildMetadataProvider;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorageWriter;
-import org.apache.log4j.Logger;
-import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,7 +26,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   public static final String FILE_NAME_KEY = "file-name";
   public static final String ARTIFACT_PATH_KEY = "artifact-path";
 
-  private static final Logger LOG = Logger.getLogger(BuildSymbolsIndexProvider.class);
+  private static final Logger LOG = Logger.getInstance(BuildSymbolsIndexProvider.class.getName());
   private final SymbolsCache mySymbolsCache;
 
   public BuildSymbolsIndexProvider(@NotNull final SymbolsCache symbolsCache) {
@@ -46,22 +44,23 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   }
 
   public void generateMedatadata(@NotNull SBuild sBuild, @NotNull MetadataStorageWriter metadataStorageWriter) {
-    int numSymbolFiles = 0;
     final BuildArtifact symbols = sBuild.getArtifacts(BuildArtifactsViewMode.VIEW_HIDDEN_ONLY).getArtifact(".teamcity/symbols");
     final long buildId = sBuild.getBuildId();
+    final Set<String> processedSymbols = new HashSet<>();
     if(symbols != null){
       for (BuildArtifact symbolSignaturesSource : symbols.getChildren()){
         if (!symbolSignaturesSource.getName().startsWith(SymbolsConstants.SYMBOL_SIGNATURES_FILE_NAME_PREFIX) &&
-                !symbolSignaturesSource.getName().startsWith(SymbolsConstants.BINARY_SIGNATURES_FILE_NAME_PREFIX))
+            !symbolSignaturesSource.getName().startsWith(SymbolsConstants.BINARY_SIGNATURES_FILE_NAME_PREFIX))
           continue;
 
-        Set<PdbSignatureIndexEntry> indexEntries = Collections.emptySet();
+        final Set<PdbSignatureIndexEntry> indexEntries;
         try {
           indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream(), false);
-        } catch (IOException e) {
-          LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
-        } catch (JDOMException e) {
-          LOG.debug("Failed to read symbols index data from artifact " + symbolSignaturesSource.getRelativePath(), e);
+        } catch (Exception e) {
+          LOG.warnAndDebugDetails(String.format(
+            "Failed to read symbols index file %s of build %s",
+            symbolSignaturesSource.getRelativePath(), LogUtil.describe(sBuild)), e);
+          continue;
         }
 
         LOG.debug(String.format("Build with id %d provides %d symbol file signatures.", buildId, indexEntries.size()));
@@ -69,6 +68,10 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
         for (final PdbSignatureIndexEntry indexEntry : indexEntries) {
           final String signature = indexEntry.getGuid();
           final String fileName = indexEntry.getFileName();
+          final String metadataKey = getMetadataKey(signature, fileName);
+
+          if (processedSymbols.contains(metadataKey)) continue;
+
           String artifactPath = indexEntry.getArtifactPath();
           if(artifactPath == null){
             LOG.debug(String.format("Artifact path is not provided for artifact %s, locating it by name in build %s artifacts.", fileName, LogUtil.describe(sBuild)));
@@ -86,14 +89,13 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
           data.put(FILE_NAME_KEY, fileName);
           data.put(ARTIFACT_PATH_KEY, artifactPath);
 
-          final String metadataKey = getMetadataKey(signature, fileName);
           metadataStorageWriter.addParameters(metadataKey, data);
           mySymbolsCache.removeEntry(metadataKey);
+          processedSymbols.add(metadataKey);
         }
-        ++numSymbolFiles;
       }
     }
-    if(numSymbolFiles == 0) {
+    if (processedSymbols.isEmpty()) {
       LOG.debug("Build with id " + buildId + " doesn't provide symbols index data.");
     }
   }
