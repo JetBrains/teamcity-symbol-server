@@ -96,7 +96,7 @@ public class DownloadSymbolsController extends BaseController {
     final String encodedFileName = urlMatcher.group(1).replaceAll("\\+", "%2b");
     final String fileName = URLDecoder.decode(encodedFileName, "UTF-8");
     final String signature = urlMatcher.group(2).toLowerCase();
-    final String guid = signature.substring(0, signature.length() - 1); //last symbol is PEDebugType
+    final String guid = PdbSignatureIndexUtil.extractGuid(signature, true);
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
     final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
