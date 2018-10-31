@@ -191,16 +191,6 @@ public class DownloadSymbolsController extends BaseController {
       if (entryIterator.hasNext()) {
         return entryIterator.next();
       } else {
-        //backward compatibility with old metadata published with signature only key
-        entryIterator = myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, signature);
-        while (entryIterator.hasNext()) {
-          final BuildMetadataEntry entry = entryIterator.next();
-          if (entry == null)
-            continue;
-          final String entryFileName = entry.getMetadata().get(BuildSymbolsIndexProvider.FILE_NAME_KEY);
-          if (fileName.equalsIgnoreCase(entryFileName))
-            return entry;
-        }
         return null;
       }
     });
