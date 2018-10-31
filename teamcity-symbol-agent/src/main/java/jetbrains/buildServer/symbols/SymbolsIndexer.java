@@ -276,7 +276,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "symbol-signature-local-", ".xml", false);
     myJetSymbolsExe.dumpPdbGuidsToFile(Collections.singleton(pdbFile), guidDumpFile, myProgressLogger);
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true).iterator().next();
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile)).iterator().next();
     else
       throw new Exception("Failed to get signature of " + pdbFile.getPath());
   }
@@ -286,7 +286,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "binary-signature-local-", ".xml", false);
     BinaryGuidDumper.dumpBinaryGuidsToFile(Collections.singleton(binaryFile), guidDumpFile, myProgressLogger);
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true).iterator().next();
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile)).iterator().next();
     else
       throw new Exception("Failed to get signature of " + binaryFile.getPath());
   }

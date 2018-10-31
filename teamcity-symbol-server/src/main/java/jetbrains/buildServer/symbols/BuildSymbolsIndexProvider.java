@@ -55,7 +55,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
         final Set<PdbSignatureIndexEntry> indexEntries;
         try {
-          indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream(), false);
+          indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream());
         } catch (Exception e) {
           LOG.warnAndDebugDetails(String.format(
             "Failed to read symbols index file %s of build %s",
