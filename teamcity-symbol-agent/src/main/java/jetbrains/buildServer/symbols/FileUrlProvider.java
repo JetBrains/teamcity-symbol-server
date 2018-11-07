@@ -31,7 +31,7 @@ public class FileUrlProvider {
   @Nullable
   public String getFileUrl(File file) {
     final String canonicalFilePath = FileUtil.getCanonicalFile(file).getPath();
-    if (!canonicalFilePath.startsWith(mySourcesRootDirectoryCanonicalPath)) {
+    if (!StringUtil.startsWithIgnoreCase(canonicalFilePath, mySourcesRootDirectoryCanonicalPath)) {
       LOG.debug(String.format("Failed to construct URL for file %s. It locates outside of source root directory %s.",
         canonicalFilePath, mySourcesRootDirectoryCanonicalPath));
       return null;
