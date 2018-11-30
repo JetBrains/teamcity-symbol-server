@@ -2,6 +2,7 @@
 
 [![official JetBrains project](http://jb.gg/badges/official.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![build status](https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk)/statusIcon.svg)](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk&guest=1)
 
 Allows using TeamCity as a symbol and source server.
 
@@ -12,14 +13,7 @@ Allows using TeamCity as a symbol and source server.
 
 ## Download
 
-You can download the plugin and install it as [an additional TeamCity plugin](https://confluence.jetbrains.com/display/TCDL/Installing+Additional+Plugins). The latest plugin builds:
-
-| Branch | Status | Download | TeamCity |
-|--------|--------|----------|----------|
-| master | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_BuildTrunk/.lastSuccessful/symbol-server.zip?guest=1)| 2018.2.x |
-| Indore-2018.1.x | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_Build20181x&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_Build20181x)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_Build20181x/.lastSuccessful/symbol-server.zip?guest=1)| 2018.1.x |
-| Indore-2017.2.x | <a href="https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityPluginsByJetBrains_SymbolServer_Build20172x&guest=1"><img src="https://teamcity.jetbrains.com/app/rest/builds/buildType:(id:TeamCityPluginsByJetBrains_SymbolServer_Build20172x)/statusIcon.svg" alt=""/></a> | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_SymbolServer_Build20172x/.lastSuccessful/symbol-server.zip?guest=1)| 2017.2.x |
-
+You can [download the plugin](https://plugins.jetbrains.com/plugin/9123-symbol-server) and install it as [an additional TeamCity plugin](https://confluence.jetbrains.com/display/TCDL/Installing+Additional+Plugins) for TeamCity 10.0+.
 
 ## Requirements
 
