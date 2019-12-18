@@ -44,3 +44,8 @@ fabric.properties
 .gradle
 build
 /classes/
+jet-symbols/packages/
+jet-symbols/src/JetBrains.CommandLine.Symbols/bin/
+jet-symbols/out/
+jet-symbols/src/JetBrains.CommandLine.Symbols/obj/
+jet-symbols/.vs/

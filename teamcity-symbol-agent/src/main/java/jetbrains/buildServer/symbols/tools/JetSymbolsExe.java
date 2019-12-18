@@ -21,6 +21,8 @@ public class JetSymbolsExe {
   private static final String SYMBOLS_EXE = "JetBrains.CommandLine.Symbols.exe";
   private static final String DUMP_SYMBOL_SIGN_CMD = "dumpSymbolSign";
   private static final String LIST_SOURCES_CMD = "listSources";
+  private static final String GET_PDB_TYPE_CMD = "getPdbType";
+  private static final String UPDATE_SOURCE_URLS_CMD = "updateSourceUrls";
   private final File myExePath;
 
   public JetSymbolsExe(File homeDir) {
@@ -54,6 +56,48 @@ public class JetSymbolsExe {
     } else {
       return Collections.emptyList();
     }
+  }
+
+  public PdbType getPdbType(File symbolsFile, BuildProgressLogger buildLogger) {
+    final GeneralCommandLine commandLine = new GeneralCommandLine();
+    commandLine.setExePath(myExePath.getPath());
+    commandLine.addParameter(GET_PDB_TYPE_CMD);
+    commandLine.addParameter(symbolsFile.getAbsolutePath());
+
+    final ExecResult execResult = executeCommandLine(commandLine, buildLogger);
+    if (execResult.getExitCode() == 0) {
+      return parsePdbType(execResult.getOutLines(), buildLogger);
+    } else {
+      buildLogger.error("Cannot parse PDB type.");
+      return PdbType.Undefined;
+    }
+  }
+
+  public ExecResult updatePortablePdbSourceUrls(final File symbolsFile, final File sourceUrlsFile, final BuildProgressLogger buildLogger) {
+    final GeneralCommandLine commandLine = new GeneralCommandLine();
+    commandLine.setExePath(myExePath.getPath());
+    commandLine.addParameter(UPDATE_SOURCE_URLS_CMD);
+    commandLine.addParameter(symbolsFile.getAbsolutePath());
+    commandLine.addParameter(String.format("/i=%s", sourceUrlsFile.getPath()));
+
+    return executeCommandLine(commandLine, buildLogger);
+  }
+
+  private PdbType parsePdbType(final String[] output, final BuildProgressLogger buildLogger) {
+    final StringBuilder outputBuilder = new StringBuilder();
+    for (int index = 0; index < output.length; index++) {
+      if (index > 0) {
+        outputBuilder.append("\n");
+      }
+      outputBuilder.append(output[index]);
+    }
+
+    final String outputValue = outputBuilder.toString();
+    final PdbType result = PdbType.parse(outputValue);
+    if (result == PdbType.Undefined) {
+      buildLogger.error(String.format("Cannot parse PDB type: %s", outputValue));
+    }
+    return result;
   }
 
   private ExecResult executeCommandLine(GeneralCommandLine commandLine, BuildProgressLogger buildLogger) {

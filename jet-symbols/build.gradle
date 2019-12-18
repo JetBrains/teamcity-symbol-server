@@ -1,5 +1,5 @@
 plugins {
-	id 'com.ullink.msbuild' version '2.16'
+	id 'com.ullink.msbuild' version '3.6'
 	id 'com.ullink.nuget' version '2.15'
 	id 'com.ullink.nunit' version '1.10'
 }
@@ -17,7 +17,7 @@ msbuild {
 	projectName = project.name
 
 	// targets to execute (/t:Clean;Rebuild, no default)
-	targets = ['Build']
+	targets = ['Clean', 'Build']
 
 	verbosity = 'detailed'
 }

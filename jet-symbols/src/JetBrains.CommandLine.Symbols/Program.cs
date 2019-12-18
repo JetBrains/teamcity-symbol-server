@@ -40,26 +40,36 @@ namespace JetBrains.CommandLine.Symbols
       var commandName = args.First();
       switch (commandName)
       {
-        case DumpSymbolsFileSignCommand.CMD_NAME:
-        {
-          var targetFilePaths = GetTargetFilePaths(args);
-          var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
-          return new DumpSymbolsFileSignCommand(outputFilePath, targetFilePaths);
-        }
-          
-        case DumpBinaryFileSignCommand.CMD_NAME:
-        {
-          var targetFilePaths = GetTargetFilePaths(args);
-          var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
-          return new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
-        }
-          
-        case ListReferencesSourcesCommand.CMD_NAME:
-          return new ListReferencesSourcesCommand(FileSystemPath.TryParse(args[1]));
-        
-        default:
-          error = String.Format("{0} command is unknown.", commandName);
-          return null;
+          case DumpSymbolsFileSignCommand.CMD_NAME:
+          {
+              var targetFilePaths = GetTargetFilePaths(args);
+              var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
+              return new DumpSymbolsFileSignCommand(outputFilePath, targetFilePaths);
+          }
+
+          case DumpBinaryFileSignCommand.CMD_NAME:
+          {
+              var targetFilePaths = GetTargetFilePaths(args);
+              var outputFilePath = FileSystemPath.TryParse(args[1].Substring(3));
+              return new DumpBinaryFileSignCommand(outputFilePath, targetFilePaths);
+          }
+
+          case ListReferencesSourcesCommand.CMD_NAME:
+              return new ListReferencesSourcesCommand(FileSystemPath.TryParse(args[1]));
+
+          case GetPdbTypeCommand.CMD_NAME:
+              return new GetPdbTypeCommand(FileSystemPath.TryParse(args[1]));
+
+          case UpdateSourceUrlsCommand.CMD_NAME:
+          {
+              var symbolsFile = FileSystemPath.TryParse(args[1]);
+              var sourceDescriptorFilePath = FileSystemPath.TryParse(args[2].Substring(3));
+              return new UpdateSourceUrlsCommand(symbolsFile, sourceDescriptorFilePath);
+          }
+
+          default:
+              error = String.Format("{0} command is unknown.", commandName);
+              return null;
       }
     }
 

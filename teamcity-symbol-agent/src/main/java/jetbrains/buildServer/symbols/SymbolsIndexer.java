@@ -12,6 +12,7 @@ import jetbrains.buildServer.dotNet.DotNetConstants;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
+import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -215,10 +216,17 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private void processPdbArtifacts(Map<File, String> pdbFiles) {
-    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(myBuildTempDirectory,
-      mySrcSrvHomeDir,
-      new SrcSrvStreamBuilder(myFileUrlProvider, myProgressLogger),
-      myJetSymbolsExe
+    final PdbFilePatcherAdapterFactory patcherAdapter = new PdbFilePatcherAdapterFactoryImpl(
+      myFileUrlProvider,
+      myProgressLogger,
+      new PdbStrExe(mySrcSrvHomeDir),
+      myJetSymbolsExe);
+
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(
+      myBuildTempDirectory,
+      myJetSymbolsExe,
+      patcherAdapter,
+      myProgressLogger
     );
 
     for(File pdbFile : pdbFiles.keySet()){
@@ -230,7 +238,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       myProgressLogger.message("Indexing sources in file " + pdbFile.getAbsolutePath());
       try {
         myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
-        if (pdbFilePatcher.patch(pdbFile, myProgressLogger)) {
+        if (pdbFilePatcher.patch(pdbFile)) {
           final String artifactPath = myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName());
           final PdbSignatureIndexEntry signatureIndexEntry = getPdbSignature(pdbFile);
           myPdbFileToArtifactMap.put(pdbFile, artifactPath);
