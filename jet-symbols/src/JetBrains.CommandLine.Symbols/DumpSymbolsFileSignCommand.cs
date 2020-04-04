@@ -2,6 +2,9 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Metadata.Debug.Pdb;
+using JetBrains.Metadata.Debug.Pdb.Dbi;
+using JetBrains.Metadata.Utils;
+using JetBrains.Metadata.Utils.PE.Directories;
 
 namespace JetBrains.CommandLine.Symbols
 {
@@ -27,7 +30,26 @@ namespace JetBrains.CommandLine.Symbols
         Console.Error.WriteLine("Empty PDB file " + targetFilePath);
         return null;
       }
-      
+
+      if (PdbUtils.GetPdbType(targetFilePath) == DebugInfoType.Windows)
+      {
+        using (var pdbStream = targetFilePath.OpenFileForReading())
+        {
+          var pdbFile = new WindowsPdbFile(pdbStream);
+          var dbiStream = pdbFile.GetDbiStream();
+          var ageFromDbi = 1;
+          if (dbiStream.Length > 0)
+          {
+            var binaryStream = new StreamBinaryReader(dbiStream);
+            var dbiHeader = new DbiHeader(binaryStream);
+            ageFromDbi = dbiHeader.PdbAge;
+          }
+          var root = pdbFile.GetRoot();
+          var signature = root.PdbSignature;
+          return string.Format("{0}{1:X}", signature.ToString("N").ToUpperInvariant(), ageFromDbi);
+        }
+      }
+
       var debugInfo = PdbUtils.TryGetPdbDebugInfo(targetFilePath);
       if (debugInfo == null)
       {
