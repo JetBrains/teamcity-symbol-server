@@ -41,7 +41,10 @@ public class PdbFilePatcher {
    * @throws Exception is error has happen during patching process.
    */
   public boolean patch(File symbolsFile) throws Exception {
-    final Collection<File> sourceFiles = myJetSymbolsExe.getReferencedSourceFiles(symbolsFile, myProgressLogger);
+    final PdbType pdbType = myJetSymbolsExe.getPdbType(symbolsFile, myProgressLogger);
+    final PdbFilePatcherAdapter patherAdapter = myPatcheAdapterFactory.create(pdbType);
+
+    final Collection<File> sourceFiles = patherAdapter.getReferencedSourceFiles(symbolsFile);
     final String symbolsFileCanonicalPath = symbolsFile.getCanonicalPath();
     if (sourceFiles.isEmpty()) {
       final String message = "No source information found in pdb file " + symbolsFileCanonicalPath;
@@ -51,8 +54,6 @@ public class PdbFilePatcher {
     }
 
     final File tmpFile = FileUtil.createTempFile(myWorkingDir, "pdb-", ".patch", false);
-    final PdbType pdbType = myJetSymbolsExe.getPdbType(symbolsFile, myProgressLogger);
-    final PdbFilePatcherAdapter patherAdapter = myPatcheAdapterFactory.create(pdbType);
     try {
       int processedFilesCount = patherAdapter.serializeSourceLinks(tmpFile, sourceFiles);
       if (processedFilesCount == 0) {

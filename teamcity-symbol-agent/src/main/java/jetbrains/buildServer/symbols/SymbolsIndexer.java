@@ -13,6 +13,7 @@ import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
+import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -220,7 +221,8 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       myFileUrlProvider,
       myProgressLogger,
       new PdbStrExe(mySrcSrvHomeDir),
-      myJetSymbolsExe);
+      myJetSymbolsExe,
+      new SrcToolExe(mySrcSrvHomeDir));
 
     final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(
       myBuildTempDirectory,

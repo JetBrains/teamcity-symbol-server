@@ -4,6 +4,7 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.NullBuildProgressLogger;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
+import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.FileUtil;
 import org.testng.annotations.BeforeMethod;
 
@@ -29,7 +30,8 @@ public class PdbFilePatcherTest extends BaseTestCase {
       null,
       new NullBuildProgressLogger(),
       new PdbStrExe(myTestHomeDir),
-      exe);
+      exe,
+      new SrcToolExe(myTestHomeDir));
     myPatcher = new PdbFilePatcher(
       myTestHomeDir,
       exe,

@@ -31,4 +31,9 @@ public class PortablePdbFilePatcherAdapterImpl implements PdbFilePatcherAdapter 
   public ExecResult updatePdbSourceLinks(final File symbolsFile, final File sourceLinksFile) {
     return myJetSymbolsExe.updatePortablePdbSourceUrls(symbolsFile, sourceLinksFile, myBuildLogger);
   }
+
+  @Override
+  public Collection<File> getReferencedSourceFiles(final File symbolsFile) {
+    return myJetSymbolsExe.getReferencedSourceFiles(symbolsFile, myBuildLogger);
+  }
 }
