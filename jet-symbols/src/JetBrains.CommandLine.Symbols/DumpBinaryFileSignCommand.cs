@@ -16,14 +16,14 @@ namespace JetBrains.CommandLine.Symbols
     {
     }
 
-    protected override string GetFileSignature(FileSystemPath targetFilePath)
+    protected override FileSignature GetFileSignature(FileSystemPath targetFilePath)
     {
       try
       {
         using (Stream stream = targetFilePath.OpenFileForReading())
         {
           var peFile = new PEFile(new StreamBinaryReader(stream));
-          return string.Format("{0:X}{1:X}", peFile.COFFheader.TimeDateStamp, peFile.NTHeader.SizeOfImage);
+          return new FileSignature(string.Format("{0:X}{1:X}", peFile.COFFheader.TimeDateStamp, peFile.NTHeader.SizeOfImage));
         }
       }
       catch (Exception ex)

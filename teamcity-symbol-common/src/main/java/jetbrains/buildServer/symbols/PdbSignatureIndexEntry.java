@@ -23,28 +23,27 @@ import org.jetbrains.annotations.Nullable;
  * Created by Evgeniy.Koshkin.
  */
 public class PdbSignatureIndexEntry {
-    private final String myGuid;
-    private final String myFileName;
-    private final String myArtifactPath;
+  private final PdbSignatureEntry mySignature;
+  private final String myFileName;
+  private final String myArtifactPath;
 
-    public PdbSignatureIndexEntry(@NotNull String guid, @NotNull String fileName, @Nullable String filePath) {
-        myGuid = guid;
-        myFileName = fileName;
-        myArtifactPath = filePath;
-    }
+  public PdbSignatureIndexEntry(@NotNull PdbSignatureEntry signature, @NotNull String fileName, @Nullable String filePath) {
+    mySignature = signature;
+    myFileName = fileName;
+    myArtifactPath = filePath;
+  }
 
-    @NotNull
-    public String getGuid() {
-        return myGuid;
-    }
+  public PdbSignatureEntry getSignature() {
+    return mySignature;
+  }
 
-    @NotNull
-    public String getFileName() {
-        return myFileName;
-    }
+  @NotNull
+  public String getFileName() {
+    return myFileName;
+  }
 
-    @Nullable
-    public String getArtifactPath() {
-        return myArtifactPath;
-    }
+  @Nullable
+  public String getArtifactPath() {
+    return myArtifactPath;
+  }
 }

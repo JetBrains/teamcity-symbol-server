@@ -111,13 +111,13 @@ public class DownloadSymbolsController extends BaseController {
 
     final String encodedFileName = urlMatcher.group(1).replaceAll("\\+", "%2b");
     final String fileName = URLDecoder.decode(encodedFileName, "UTF-8");
-    final String signature = urlMatcher.group(2).toLowerCase();
-    final String guid = PdbSignatureIndexUtil.extractGuid(signature, true);
-    LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
+    final String fullSignature = PdbSignatureIndexUtil.extractFullSignature(urlMatcher.group(2));
+    final String signature = PdbSignatureIndexUtil.extractSignatureGuid(fullSignature);
+    LOG.debug(String.format("Symbol file requested. File name: %s. Full signature: %s, Guid: %s.", fileName, fullSignature, signature));
 
-    final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
+    final BuildMetadataEntry metadataEntry = getMetadataEntry(fullSignature, signature, fileName);
     if(metadataEntry == null) {
-      LOG.debug(String.format("There is no information about symbol file %s with id %s in the index.", fileName, guid));
+      LOG.debug(String.format("There is no information about symbol file %s with id %s in the index.", fileName, fullSignature));
       WebUtil.notFound(request, response, "File not found", null);
       return null;
     }
@@ -140,7 +140,7 @@ public class DownloadSymbolsController extends BaseController {
           final BuildArtifact buildArtifact = findArtifact(metadataEntry);
           if(buildArtifact == null){
             WebUtil.notFound(request, response, "Symbol file not found", null);
-            LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
+            LOG.debug(String.format("Symbol file not found. File name: %s. Full signature: %s. Guid: %s.", fileName, fullSignature, signature));
             return;
           }
 
@@ -199,7 +199,16 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName){
+  private BuildMetadataEntry getMetadataEntry(String fullSignature, String signature, String fileName) {
+    BuildMetadataEntry result = getMetadataEntry(new PdbSignatureDescriptor(fullSignature, PdbSignatureType.FULL), fileName);
+    if (result != null) {
+      return result;
+    }
+    return getMetadataEntry(new PdbSignatureDescriptor(signature, PdbSignatureType.GUID), fileName);
+  }
+
+  @Nullable
+  private BuildMetadataEntry getMetadataEntry(@NotNull PdbSignatureDescriptor signature, @NotNull String fileName){
     final String metadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
     return mySymbolsCache.getEntry(metadataKey, compositeMetadataKey -> {
       Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(

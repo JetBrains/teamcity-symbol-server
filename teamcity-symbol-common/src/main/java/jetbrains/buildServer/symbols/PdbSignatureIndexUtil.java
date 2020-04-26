@@ -33,19 +33,28 @@ import java.util.*;
  */
 class PdbSignatureIndexUtil {
   private static final String SIGN = "sign";
+  private static final String FULL_SIGN = "full-sign";
   private static final String FILE_NAME = "file";
   private static final String FILE_PATH = "file-path";
   private static final String FILE_SIGNS = "file-signs";
   private static final String FILE_SIGN_ENTRY = "file-sign-entry";
+  private static final int SIGN_LENGTH = 32;
 
   @NotNull
-  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream, final boolean withDebugType) throws JDOMException, IOException {
+  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream) throws JDOMException, IOException {
     final SAXBuilder builder = new SAXBuilder();
     final Document document = builder.build(inputStream);
     final Set<PdbSignatureIndexEntry> result = new HashSet<PdbSignatureIndexEntry>();
     for (Object signElementObject : document.getRootElement().getChildren()){
       final Element signElement = (Element) signElementObject;
-      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN), withDebugType), signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
+      result.add(new PdbSignatureIndexEntry(
+        new PdbSignatureEntry(
+          extractSignatureGuid(signElement.getAttributeValue(SIGN)),
+          signElement.getAttributeValue(FULL_SIGN) != null
+            ? signElement.getAttributeValue(FULL_SIGN).toLowerCase()
+            : null),
+        signElement.getAttributeValue(FILE_NAME),
+        signElement.getAttributeValue(FILE_PATH)));
     }
     return result;
   }
@@ -54,21 +63,34 @@ class PdbSignatureIndexUtil {
     final Element root = new Element(FILE_SIGNS);
     for (final PdbSignatureIndexEntry indexEntry : indexData){
       final Element entry = new Element(FILE_SIGN_ENTRY);
-      entry.setAttribute(SIGN, indexEntry.getGuid());
+
+      final PdbSignatureEntry signature = indexEntry.getSignature();
+      entry.setAttribute(SIGN, signature.getSignature());
+      if (signature.getFullSignature() != null) {
+        entry.setAttribute(FULL_SIGN, signature.getFullSignature());
+      }
+
       entry.setAttribute(FILE_NAME, indexEntry.getFileName());
+
       String artifactPath = indexEntry.getArtifactPath();
-      if(artifactPath != null){
+      if (artifactPath != null) {
         entry.setAttribute(FILE_PATH, artifactPath);
       }
+
       root.addContent(entry);
     }
     XmlUtil.saveDocument(new Document(root), outputStream);
   }
 
-  public static String extractGuid(String sign, boolean cutDebugType) {
-    if (cutDebugType)
-      return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
-    else
-      return sign.toLowerCase();
+  public static String extractSignatureGuid(String sign) {
+    sign = sign.toLowerCase();
+    if (sign.length() > SIGN_LENGTH) {
+      return sign.substring(0, SIGN_LENGTH);
+    }
+    return sign;
+  }
+
+  public static String extractFullSignature(String sign) {
+    return sign.toLowerCase();
   }
 }

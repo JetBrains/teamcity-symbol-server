@@ -26,11 +26,11 @@ namespace JetBrains.CommandLine.Symbols
           return 1;
         }
 
-        var dictionary = new Dictionary<FileSystemPath, string>(myTargetFilePaths.Count);
+        var dictionary = new Dictionary<FileSystemPath, FileSignature>(myTargetFilePaths.Count);
         foreach (var targetFilePath in myTargetFilePaths)
         {
           var fileSignature = GetFileSignature(targetFilePath);
-          if (string.IsNullOrEmpty(fileSignature)) continue;
+          if (string.IsNullOrEmpty(fileSignature?.Signature)) continue;
           dictionary.Add(targetFilePath, fileSignature);
         }
         
@@ -52,22 +52,43 @@ namespace JetBrains.CommandLine.Symbols
       }
     }
 
-    private static void WriteToFile(FileSystemPath outputFilePath, Dictionary<FileSystemPath, string> signatures)
+    private static void WriteToFile(FileSystemPath outputFilePath, Dictionary<FileSystemPath, FileSignature> signatures)
     {
       XmlDocument xmlDocument = new XmlDocument();
       XmlNode node = xmlDocument.CreateNode(XmlNodeType.Element, "file-signs", "");
-      foreach (KeyValuePair<FileSystemPath, string> signature in signatures)
+      foreach (KeyValuePair<FileSystemPath, FileSignature> signature in signatures)
       {
         XmlElement element = node.CreateElement("file-sign-entry");
         element.CreateAttributeWithNonEmptyValue("file-path", signature.Key.FullPath);
         element.CreateAttributeWithNonEmptyValue("file", signature.Key.Name);
-        element.CreateAttributeWithNonEmptyValue("sign", signature.Value);
+        element.CreateAttributeWithNonEmptyValue("sign", signature.Value.Signature);
+        element.CreateAttributeWithNonEmptyValue("full-sign", signature.Value.FullSignature);
       }
       xmlDocument.AppendChild(node);
       using (XmlWriter w = XmlWriter.Create(outputFilePath.FullPath))
         xmlDocument.WriteContentTo(w);
     }
 
-    protected abstract string GetFileSignature(FileSystemPath targetFilePath);
+    protected abstract FileSignature GetFileSignature(FileSystemPath targetFilePath);
+
+    protected class FileSignature
+    {
+      public string FullSignature { get; private set; }
+
+      public string Signature { get; private set; }
+
+      public FileSignature(string signature, string fullSignature = null)
+      {
+        Signature = signature;
+        FullSignature = fullSignature;
+      }
+
+      public static FileSignature Create(Guid signature, int age)
+      {
+        var guidStr = signature.ToString("N").ToUpperInvariant();
+        var fullSignature = string.Format("{0}{1:X}", guidStr, age);
+        return new FileSignature(guidStr, fullSignature);
+      }
+    }
   }
 }

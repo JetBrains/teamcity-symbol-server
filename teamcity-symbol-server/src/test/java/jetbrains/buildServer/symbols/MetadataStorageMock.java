@@ -29,7 +29,7 @@ class MetadataStorageMock implements MetadataStorage {
 
   private List<BuildMetadataEntry> myEntries = new ArrayList<>();
 
-  public void addEntry(final long buildId, final String fileSignature, String fileName, String artifactPath) {
+  public void addEntry(final long buildId, final PdbSignatureType type, final String fileSignature, String fileName, String artifactPath) {
     myEntries.add(new BuildMetadataEntry() {
       public long getBuildId() {
         return buildId;
@@ -37,7 +37,7 @@ class MetadataStorageMock implements MetadataStorage {
 
       @NotNull
       public String getKey() {
-        return BuildSymbolsIndexProvider.getMetadataKey(fileSignature, fileName);
+        return BuildSymbolsIndexProvider.getMetadataKey(new PdbSignatureDescriptor(fileSignature, type), fileName);
       }
 
       @NotNull

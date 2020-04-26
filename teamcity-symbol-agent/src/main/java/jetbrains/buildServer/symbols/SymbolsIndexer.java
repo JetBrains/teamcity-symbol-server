@@ -17,6 +17,8 @@
 package jetbrains.buildServer.symbols;
 
 import com.intellij.util.containers.ConcurrentHashSet;
+import java.io.FileFilter;
+import java.util.stream.Collectors;
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.BuildProblemTypes;
 import jetbrains.buildServer.agent.*;
@@ -30,6 +32,7 @@ import jetbrains.buildServer.symbols.tools.BinaryGuidDumper;
 import jetbrains.buildServer.symbols.tools.JetSymbolsExe;
 import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.symbols.tools.SrcToolExe;
+import jetbrains.buildServer.util.ArchiveUtil;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.log4j.Logger;
@@ -53,6 +56,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private static final String PDB_FILE_EXTENSION = "pdb";
   private static final String DLL_FILE_EXTENSION = "dll";
   private static final String EXE_FILE_EXTENSION = "exe";
+  private static final String SNNUPKG_FILE_EXTENSION = "snupkg";
   private static final String X64_SRCSRV = "\\x64\\srcsrv";
   private static final String X86_SRCSRV = "\\x86\\srcsrv";
   private static final String NET_45_NOT_FOUND_PROBLEM_IDENTITY = "net45symbolindexing";
@@ -77,6 +81,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private File mySrcSrvHomeDir;
   @Nullable private FileUrlProvider myFileUrlProvider;
   private boolean myBuildHasIndexerFeature;
+  private boolean myIndexSnupkgFlag;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
                         @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
@@ -113,6 +118,12 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
         myProgressLogger.message("Source Server tools home directory located. " + mySrcSrvHomeDir.getAbsolutePath());
 
         myFileUrlProvider = FileUrlProviderFactory.getProvider(runningBuild, myProgressLogger);
+
+        myIndexSnupkgFlag = runningBuild
+          .getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE)
+          .stream()
+          .map(feature -> feature.getParameters().getOrDefault(SymbolsConstants.INDEX_SNUPKG_FLAG, "false"))
+          .anyMatch(flag -> "true".equalsIgnoreCase(flag));
       }
 
       @Override
@@ -199,7 +210,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           if(artifactPath == null) continue;
           final File targetFile = new File(artifactPath);
           if(artifactMap.containsKey(targetFile)) {
-            indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getGuid(), targetFile.getName(), artifactMap.get(targetFile)));
+            indexData.add(new PdbSignatureIndexEntry(signatureIndexEntry.getSignature(), targetFile.getName(), artifactMap.get(targetFile)));
           }
         }
         return indexData;
@@ -227,6 +238,11 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
       LOG.debug("Searching for binary files in publishing *.dll artifacts.");
       processBinaryArtifacts(artifacts, DLL_FILE_EXTENSION);
+
+      if (myIndexSnupkgFlag) {
+        LOG.debug("Searching for symbol files in .snupkg packages.");
+        processSymbolPackageArtifacts(getArtifactPathsByFileExtension(artifacts, SNNUPKG_FILE_EXTENSION));
+      }
     } finally {
       myProgressLogger.logMessage(DefaultMessagesInfo.createBlockEnd(blockName, "symbol-server"));
     }
@@ -272,6 +288,74 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     }
   }
 
+  private void processSymbolPackageArtifacts(Map<File, String> packagesFiles) {
+    final PdbFilePatcherAdapterFactory patcherAdapter = new PdbFilePatcherAdapterFactoryImpl(
+      myFileUrlProvider,
+      myProgressLogger,
+      new PdbStrExe(mySrcSrvHomeDir),
+      myJetSymbolsExe,
+      new SrcToolExe(mySrcSrvHomeDir));
+
+    final PdbFilePatcher pdbFilePatcher = new PdbFilePatcher(
+      myBuildTempDirectory,
+      myJetSymbolsExe,
+      patcherAdapter,
+      myProgressLogger
+    );
+
+    final File unpackedSymbolsDir = new File(myBuildTempDirectory, FileUtil.normalizeSeparator("symbols/unpacked"));
+    final File packedSymbolsDir = new File(myBuildTempDirectory, FileUtil.normalizeSeparator("symbols/packed"));
+
+    for(File packageFile : packagesFiles.keySet()){
+      final String blockName = "Snupkg file";
+      myProgressLogger.message("Indexing sources in snupkg file " + packageFile.getAbsolutePath());
+      try {
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
+
+        final String artifactPackageDir = packagesFiles.get(packageFile);
+        final String artifactPackagePath = myArtifactPathHelper.concatenateArtifactPath(artifactPackageDir, packageFile.getName());
+
+        final String normailizedPackagePath = FileUtil.normalizeSeparator(artifactPackagePath);
+        final File targetUnpackedSybolsDir = new File(unpackedSymbolsDir, normailizedPackagePath);
+        final File targetPackedSybolsFile = new File(packedSymbolsDir, normailizedPackagePath);
+
+        myProgressLogger.message("Unpacking snupkg file " + packageFile.getAbsolutePath() + " to " + targetUnpackedSybolsDir.getAbsolutePath());
+        ArchiveUtil.unpackZip(packageFile, targetUnpackedSybolsDir);
+        final Collection<File> pdbFiles = FileUtil.findFiles(
+          new FileFilter() {
+            @Override
+            public boolean accept(final File f) {
+              return f.isFile() && FileUtil.getExtension(f.getName()).equalsIgnoreCase(PDB_FILE_EXTENSION);
+            }
+          },
+          targetUnpackedSybolsDir);
+
+
+        final String artifactArchivePath =  artifactPackagePath + "!/";
+        final Map<File, String> map = pdbFiles
+          .stream()
+          .collect(Collectors.toMap(file -> file, file -> artifactArchivePath + file.getAbsoluteFile().getParent().substring(targetUnpackedSybolsDir.getAbsolutePath().length() + 1)));
+
+        processPdbArtifacts(map);
+
+        myProgressLogger.message("Packing indexed pdb files to snupkg file " + targetPackedSybolsFile.getAbsoluteFile());
+
+        //noinspection ResultOfMethodCallIgnored
+        targetPackedSybolsFile.getParentFile().mkdirs();
+
+        ArchiveUtil.packZip(targetPackedSybolsFile, (dir, name) -> true, Collections.singleton(targetUnpackedSybolsDir));
+        myProgressLogger.message("Updating original snupkg file");
+        FileUtil.rename(targetPackedSybolsFile, packageFile);
+      } catch (Throwable e) {
+        LOG.error("Error occurred while processing snupkg file " + packageFile, e);
+        myProgressLogger.error("Error occurred while processing snupkg file " + packageFile);
+        myProgressLogger.exception(e);
+      } finally {
+        myProgressLogger.logMessage(DefaultMessagesInfo.createBlockEnd(blockName, "symbol-server"));
+      }
+    }
+  }
+
   private void processBinaryArtifacts(@NotNull List<ArtifactsCollection> artifacts, String fileExtension) {
     final Map<File, String> binaryFiles = getArtifactPathsByFileExtension(artifacts, fileExtension);
     for (File binaryFile : binaryFiles.keySet()){
@@ -302,7 +386,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "symbol-signature-local-", ".xml", false);
     myJetSymbolsExe.dumpPdbGuidsToFile(Collections.singleton(pdbFile), guidDumpFile, myProgressLogger);
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true).iterator().next();
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile)).iterator().next();
     else
       throw new Exception("Failed to get signature of " + pdbFile.getPath());
   }
@@ -312,7 +396,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
     final File guidDumpFile = FileUtil.createTempFile(myBuildTempDirectory, "binary-signature-local-", ".xml", false);
     BinaryGuidDumper.dumpBinaryGuidsToFile(Collections.singleton(binaryFile), guidDumpFile, myProgressLogger);
     if(guidDumpFile.isFile())
-      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile), true).iterator().next();
+      return PdbSignatureIndexUtil.read(new FileInputStream(guidDumpFile)).iterator().next();
     else
       throw new Exception("Failed to get signature of " + binaryFile.getPath());
   }

@@ -17,7 +17,7 @@ namespace JetBrains.CommandLine.Symbols
     {
     }
 
-    protected override string GetFileSignature(FileSystemPath targetFilePath)
+    protected override FileSignature GetFileSignature(FileSystemPath targetFilePath)
     {
       if (!targetFilePath.ExistsFile)
       {
@@ -45,19 +45,18 @@ namespace JetBrains.CommandLine.Symbols
             ageFromDbi = dbiHeader.PdbAge;
           }
           var root = pdbFile.GetRoot();
-          var signature = root.PdbSignature;
-          return string.Format("{0}{1:X}", signature.ToString("N").ToUpperInvariant(), ageFromDbi);
+          return FileSignature.Create(root.PdbSignature, ageFromDbi);
         }
       }
 
       var debugInfo = PdbUtils.TryGetPdbDebugInfo(targetFilePath);
-      if (debugInfo == null)
+      if (debugInfo != null)
       {
-        Console.Error.WriteLine("Unsupport PDB file " + targetFilePath);
-        return null;
+        return FileSignature.Create(debugInfo.Signature, 1);
       }
 
-      return string.Format("{0}{1:X}", debugInfo.Signature.ToString("N").ToUpperInvariant(), debugInfo.AgeOrTimestamp);
+      Console.Error.WriteLine("Unsupported PDB file " + targetFilePath);
+      return null;
     }
   }
 }

@@ -16,10 +16,18 @@
   ~ limitations under the License.
   --%>
 
-<table class="runnerFormTable">
+<jsp:useBean id="is" class="jetbrains.buildServer.symbols.IndexSymbolsBean" scope="request"/>
+
+<table class="runnerFormTable featureDetails">
   <tr>
     <td colspan="2">
       <em>Symbols and sources indexing will be performed for all symbol files (.pdb) published as build artifacts.</em>
+    </td>
+  </tr>
+  <tr>
+    <th>Index NuGet symbol packages (.snupkg)</th>
+    <td>
+      <props:checkboxProperty name="${is.indexSnupkgKey}"/>
     </td>
   </tr>
 </table>

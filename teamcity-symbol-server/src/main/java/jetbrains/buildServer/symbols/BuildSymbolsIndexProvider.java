@@ -50,8 +50,13 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
   }
 
   @NotNull
-  public static String getMetadataKey(@NotNull String signature, @NotNull String fileName){
-    return signature + ":" + fileName;
+  public static String getMetadataKey(@NotNull PdbSignatureDescriptor descriptor, @NotNull String fileName){
+    switch (descriptor.getType()) {
+      case FULL:
+        return descriptor.getSignature() + ":" + fileName.toLowerCase();
+      default:
+        return descriptor.getSignature() + ":" + fileName;
+    }
   }
 
   @NotNull
@@ -71,7 +76,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
 
         final Set<PdbSignatureIndexEntry> indexEntries;
         try {
-          indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream(), false);
+          indexEntries = PdbSignatureIndexUtil.read(symbolSignaturesSource.getInputStream());
         } catch (Exception e) {
           LOG.warnAndDebugDetails(String.format(
             "Failed to read symbols index file %s of build %s",
@@ -82,32 +87,35 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
         LOG.debug(String.format("Build with id %d provides %d symbol file signatures.", buildId, indexEntries.size()));
 
         for (final PdbSignatureIndexEntry indexEntry : indexEntries) {
-          final String signature = indexEntry.getGuid();
+          final PdbSignatureEntry signatureEntry = indexEntry.getSignature();
           final String fileName = indexEntry.getFileName();
-          final String metadataKey = getMetadataKey(signature, fileName);
 
-          if (processedSymbols.contains(metadataKey)) continue;
+          for (final PdbSignatureDescriptor signature : signatureEntry) {
+            final String metadataKey = getMetadataKey(signature, fileName);
 
-          String artifactPath = indexEntry.getArtifactPath();
-          if(artifactPath == null){
-            LOG.debug(String.format("Artifact path is not provided for artifact %s, locating it by name in build %s artifacts.", fileName, LogUtil.describe(sBuild)));
-            artifactPath = locateArtifact(sBuild, fileName);
-            if(artifactPath != null){
-              LOG.debug(String.format("Located artifact by name %s, path - %s. Build - %s", fileName, artifactPath, LogUtil.describe(sBuild)));
+            if (processedSymbols.contains(metadataKey)) continue;
+
+            String artifactPath = indexEntry.getArtifactPath();
+            if (artifactPath == null) {
+              LOG.debug(String.format("Artifact path is not provided for artifact %s, locating it by name in build %s artifacts.", fileName, LogUtil.describe(sBuild)));
+              artifactPath = locateArtifact(sBuild, fileName);
+              if (artifactPath != null) {
+                LOG.debug(String.format("Located artifact by name %s, path - %s. Build - %s", fileName, artifactPath, LogUtil.describe(sBuild)));
+              }
             }
+
+            LOG.info(String.format(
+              "Indexing symbol file %s with signature %s of build %s", fileName, signature, LogUtil.describe(sBuild)
+            ));
+            final HashMap<String, String> data = new HashMap<>();
+            data.put(SIGNATURE_KEY, signature.getSignature());
+            data.put(FILE_NAME_KEY, fileName);
+            data.put(ARTIFACT_PATH_KEY, artifactPath);
+
+            metadataStorageWriter.addParameters(metadataKey, data);
+            mySymbolsCache.removeEntry(metadataKey);
+            processedSymbols.add(metadataKey);
           }
-
-          LOG.info(String.format(
-            "Indexing symbol file %s with signature %s of build %s", fileName, signature, LogUtil.describe(sBuild)
-          ));
-          final HashMap<String, String> data = new HashMap<>();
-          data.put(SIGNATURE_KEY, signature);
-          data.put(FILE_NAME_KEY, fileName);
-          data.put(ARTIFACT_PATH_KEY, artifactPath);
-
-          metadataStorageWriter.addParameters(metadataKey, data);
-          mySymbolsCache.removeEntry(metadataKey);
-          processedSymbols.add(metadataKey);
         }
       }
     }
