@@ -82,6 +82,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   @Nullable private FileUrlProvider myFileUrlProvider;
   private boolean myBuildHasIndexerFeature;
   private boolean myIndexSnupkgFlag;
+  private boolean myDisableSourceLinkModificationFlag;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
                         @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
@@ -123,6 +124,12 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           .getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE)
           .stream()
           .map(feature -> feature.getParameters().getOrDefault(SymbolsConstants.INDEX_SNUPKG_FLAG, "false"))
+          .anyMatch(flag -> "true".equalsIgnoreCase(flag));
+
+        myDisableSourceLinkModificationFlag = runningBuild
+          .getBuildFeaturesOfType(SymbolsConstants.BUILD_FEATURE_TYPE)
+          .stream()
+          .map(feature -> feature.getParameters().getOrDefault(SymbolsConstants.INDEX_DISABLE_SOURCELINK_MODIFICATION_FLAG, "false"))
           .anyMatch(flag -> "true".equalsIgnoreCase(flag));
       }
 
@@ -272,7 +279,14 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
       myProgressLogger.message("Indexing sources in file " + pdbFile.getAbsolutePath());
       try {
         myProgressLogger.logMessage(DefaultMessagesInfo.createBlockStart(blockName, "symbol-server"));
-        if (pdbFilePatcher.patch(pdbFile)) {
+
+        boolean patchResult = false;
+        if (myDisableSourceLinkModificationFlag) {
+          myProgressLogger.message("Skipping SourceLink modification");
+        } else {
+          patchResult = pdbFilePatcher.patch(pdbFile);
+        }
+        if (myDisableSourceLinkModificationFlag || patchResult) {
           final String artifactPath = myArtifactPathHelper.concatenateArtifactPath(pdbFiles.get(pdbFile), pdbFile.getName());
           final PdbSignatureIndexEntry signatureIndexEntry = getPdbSignature(pdbFile);
           myPdbFileToArtifactMap.put(pdbFile, artifactPath);
@@ -317,7 +331,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
         final String normailizedPackagePath = FileUtil.normalizeSeparator(artifactPackagePath);
         final File targetUnpackedSybolsDir = new File(unpackedSymbolsDir, normailizedPackagePath);
-        final File targetPackedSybolsFile = new File(packedSymbolsDir, normailizedPackagePath);
+        final File targetPackedSymbolsFile = new File(packedSymbolsDir, normailizedPackagePath);
 
         myProgressLogger.message("Unpacking snupkg file " + packageFile.getAbsolutePath() + " to " + targetUnpackedSybolsDir.getAbsolutePath());
         ArchiveUtil.unpackZip(packageFile, targetUnpackedSybolsDir);
@@ -338,14 +352,16 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
 
         processPdbArtifacts(map);
 
-        myProgressLogger.message("Packing indexed pdb files to snupkg file " + targetPackedSybolsFile.getAbsoluteFile());
+        if (!myDisableSourceLinkModificationFlag) {
+          myProgressLogger.message("Packing indexed pdb files to snupkg file " + targetPackedSymbolsFile.getAbsoluteFile());
 
-        //noinspection ResultOfMethodCallIgnored
-        targetPackedSybolsFile.getParentFile().mkdirs();
+          //noinspection ResultOfMethodCallIgnored
+          targetPackedSymbolsFile.getParentFile().mkdirs();
 
-        ArchiveUtil.packZip(targetPackedSybolsFile, (dir, name) -> true, Collections.singleton(targetUnpackedSybolsDir));
-        myProgressLogger.message("Updating original snupkg file");
-        FileUtil.rename(targetPackedSybolsFile, packageFile);
+          ArchiveUtil.packZip(targetPackedSymbolsFile, (dir, name) -> true, Collections.singleton(targetUnpackedSybolsDir));
+          myProgressLogger.message("Updating original snupkg file");
+          FileUtil.rename(targetPackedSymbolsFile, packageFile);
+        }
       } catch (Throwable e) {
         LOG.error("Error occurred while processing snupkg file " + packageFile, e);
         myProgressLogger.error("Error occurred while processing snupkg file " + packageFile);

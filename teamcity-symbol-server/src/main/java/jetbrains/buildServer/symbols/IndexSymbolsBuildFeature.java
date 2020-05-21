@@ -16,6 +16,8 @@
 
 package jetbrains.buildServer.symbols;
 
+import java.util.HashMap;
+import java.util.Map;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.BuildFeature;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
@@ -69,5 +71,25 @@ public class IndexSymbolsBuildFeature extends BuildFeature {
   @Override
   public String getEditParametersUrl() {
     return myEditParametersUrl;
+  }
+
+  @NotNull
+  @Override
+  public String describeParameters(@NotNull final Map<String, String> params) {
+    final StringBuilder result = new StringBuilder();
+    final String indexSnupkg = params.get(SymbolsConstants.INDEX_SNUPKG_FLAG);
+    final String disableSourceLinkModification = params.getOrDefault(SymbolsConstants.INDEX_DISABLE_SOURCELINK_MODIFICATION_FLAG, "false");
+
+    if (indexSnupkg != null) {
+      result.append("Index .snupkg: ");
+      result.append(indexSnupkg);
+      result.append("\n");
+    }
+
+    if ("true".equalsIgnoreCase(disableSourceLinkModification)) {
+      result.append("SourceLink modification is disabled");
+    }
+
+    return result.toString();
   }
 }

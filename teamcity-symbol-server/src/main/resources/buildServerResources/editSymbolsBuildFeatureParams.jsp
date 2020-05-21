@@ -30,4 +30,10 @@
       <props:checkboxProperty name="${is.indexSnupkgKey}"/>
     </td>
   </tr>
+  <tr>
+    <th>Disable SourceLink modification for .pdb files</th>
+    <td>
+      <props:checkboxProperty name="${is.indexDisableSourceLinkModificationKey}"/>
+    </td>
+  </tr>
 </table>

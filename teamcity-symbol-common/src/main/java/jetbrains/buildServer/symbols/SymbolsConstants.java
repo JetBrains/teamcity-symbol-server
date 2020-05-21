@@ -22,6 +22,7 @@ package jetbrains.buildServer.symbols;
 public class SymbolsConstants {
   public static final String BUILD_FEATURE_TYPE = "symbol-indexer";
   public static final String INDEX_SNUPKG_FLAG = "symbol-indexer.index.snupkg";
+  public static final String INDEX_DISABLE_SOURCELINK_MODIFICATION_FLAG = "symbol-indexer.disable.source-link.modification";
 
   public static final String SOURCES_SERVER_URL_PARAM_NAME = "symbols.sources-server-url";
   public static final String SERVER_OWN_URL_PARAM_NAME = "symbols.server-own-url";

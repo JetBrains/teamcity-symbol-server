@@ -18,4 +18,6 @@ package jetbrains.buildServer.symbols;
 
 public class IndexSymbolsBean {
   public String getIndexSnupkgKey() { return SymbolsConstants.INDEX_SNUPKG_FLAG; }
+
+  public String getIndexDisableSourceLinkModificationKey() { return SymbolsConstants.INDEX_DISABLE_SOURCELINK_MODIFICATION_FLAG; }
 }
