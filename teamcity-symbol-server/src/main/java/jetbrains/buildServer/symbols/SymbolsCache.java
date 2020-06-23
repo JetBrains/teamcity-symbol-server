@@ -65,8 +65,14 @@ public class SymbolsCache {
       .expireAfterAccess(expirationTimeSec, TimeUnit.SECONDS)
       .removalListener((String key, Optional<BuildMetadataEntry> entry, RemovalCause cause) -> {
         if (entry == null || !entry.isPresent()) {
+          LOG.debug("Symbols cache. Removing empty entry with key: " + key);
           return;
         }
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Symbols cache. Removing entry with key: " + key + ", value: " + entry.get());
+        }
+
         final BuildMetadataEntry buildMetadataEntry = entry.get();
         final long buildId = buildMetadataEntry.getBuildId();
         final Collection<String> keys = myCachedKeysByBuildId.get(buildId);
@@ -85,6 +91,9 @@ public class SymbolsCache {
       public void buildArtifactsChanged(@NotNull SBuild build) {
         final Collection<String> keys = myCachedKeysByBuildId.remove(build.getBuildId());
         if (keys != null) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Symbols cache. Invalidating keys: " + String.join(",", keys));
+          }
           myCachedRequests.invalidateAll(keys);
         }
       }
@@ -99,7 +108,11 @@ public class SymbolsCache {
       // Calculate build metadata entry
       final BuildMetadataEntry entry = function.apply(s);
       if (entry == null) {
+        LOG.debug("Symbols cache. There is no metadata entry with key: " + s);
         return Optional.empty();
+      }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Symbols cache. Key: " + s + " Entry: " + entry);
       }
 
       // Cache affected composite key for this build

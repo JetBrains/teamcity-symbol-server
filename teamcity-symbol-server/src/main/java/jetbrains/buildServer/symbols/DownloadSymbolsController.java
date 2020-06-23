@@ -144,10 +144,13 @@ public class DownloadSymbolsController extends BaseController {
             return;
           }
 
+          LOG.debug(String.format("Start sending symbols file. File name: %s. Guid: %s.", fileName, guid));
           BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
           try {
+            LOG.debug(String.format("Getting artifact stream for symbols file. File name: %s. Guid: %s.", fileName, guid));
             InputStream input = buildArtifact.getInputStream();
             try {
+              LOG.debug(String.format("Sending symbols file. File name: %s. Guid: %s.", fileName, guid));
               FileUtil.copyStreams(input, output);
             } finally {
               FileUtil.close(input);
@@ -155,11 +158,14 @@ public class DownloadSymbolsController extends BaseController {
           } finally {
             FileUtil.close(output);
           }
+          LOG.debug(String.format("Symbols file successfully transfered. File name: %s. Guid: %s.", fileName, guid));
         }
       });
     } catch (Throwable throwable) {
-      LOG.debug(String.format("Failed to send symbols for file %s: %s", fileName, throwable.getMessage()));
-      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, throwable.getMessage());
+      LOG.debug(String.format("Failed to send symbols for file %s: %s", fileName, throwable.getMessage()), throwable);
+      if (!response.isCommitted()) {
+        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, throwable.getMessage());
+      }
     }
 
     return null;
