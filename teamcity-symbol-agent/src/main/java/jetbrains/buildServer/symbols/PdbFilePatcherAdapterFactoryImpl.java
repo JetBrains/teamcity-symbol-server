@@ -34,6 +34,6 @@ public class PdbFilePatcherAdapterFactoryImpl implements PdbFilePatcherAdapterFa
       return new PortablePdbFilePatcherAdapterImpl(sourceLinkStreamBuilder, myJetSymbolsExe, myProgressLogger);
     }
     final SrcSrvStreamBuilder srcSrvStreamBuilder = new SrcSrvStreamBuilder(myUrlProvider, myProgressLogger);
-    return new PdbFilePatcherAdapterImpl(srcSrvStreamBuilder, myPdbStrExe, mySrcToolExe);
+    return new PdbFilePatcherAdapterImpl(srcSrvStreamBuilder, myPdbStrExe, mySrcToolExe, myProgressLogger);
   }
 }
