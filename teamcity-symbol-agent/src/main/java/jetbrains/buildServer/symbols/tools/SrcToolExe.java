@@ -38,9 +38,9 @@ public class SrcToolExe {
     final GeneralCommandLine commandLine = new GeneralCommandLine();
     commandLine.setWorkDirectory(myPath.getParent());
     commandLine.setExePath(myPath.getPath());
-    commandLine.addParameter(pdbFile.getAbsolutePath());
     commandLine.addParameter(DUMP_REFERENCES_SWITCH);
     commandLine.addParameter(ZERRO_ON_SUCCESS_SWITCH);
+    commandLine.addParameter(pdbFile.getAbsolutePath());
 
     buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
 
