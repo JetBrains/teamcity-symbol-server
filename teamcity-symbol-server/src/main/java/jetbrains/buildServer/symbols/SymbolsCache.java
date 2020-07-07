@@ -16,9 +16,17 @@
 
 package jetbrains.buildServer.symbols;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalNotification;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.SBuild;
@@ -27,13 +35,6 @@ import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Collection;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 public class SymbolsCache {
 
@@ -59,11 +60,14 @@ public class SymbolsCache {
   public SymbolsCache(@NotNull final EventDispatcher<BuildServerListener> events) {
     final int cacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ENTRIES_SIZE, 256);
     final int expirationTimeSec = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_EXPIRATION_TIME_SEC, 60 * 30);
-    myCachedRequests = Caffeine.newBuilder()
+
+    myCachedRequests = CacheBuilder
+      .newBuilder()
       .maximumSize(cacheSize)
-      .executor(Runnable::run)
       .expireAfterAccess(expirationTimeSec, TimeUnit.SECONDS)
-      .removalListener((String key, Optional<BuildMetadataEntry> entry, RemovalCause cause) -> {
+      .removalListener((RemovalNotification<String, Optional<BuildMetadataEntry>> notification) -> {
+        final String key = notification.getKey();
+        final Optional<BuildMetadataEntry> entry = notification.getValue();
         if (entry == null || !entry.isPresent()) {
           LOG.debug("Symbols cache. Removing empty entry with key: " + key);
           return;
@@ -102,33 +106,52 @@ public class SymbolsCache {
 
   public BuildMetadataEntry getEntry(@NotNull final String key,
                                      @NotNull final Function<String, BuildMetadataEntry> function) {
-    final Optional<BuildMetadataEntry> metadataEntry = myCachedRequests.get(key, s -> {
-      LOG.debug("Creating symbols cache for entry with key: " + s);
+    final Optional<BuildMetadataEntry> metadataEntry;
+    try {
+      metadataEntry = myCachedRequests.get(key, () -> {
+        LOG.debug("Creating symbols cache for entry with key: " + key);
 
-      // Calculate build metadata entry
-      final BuildMetadataEntry entry = function.apply(s);
-      if (entry == null) {
-        LOG.debug("Symbols cache. There is no metadata entry with key: " + s);
-        return Optional.empty();
-      }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Symbols cache. Key: " + s + " Entry: " + entry);
-      }
+        // Calculate build metadata entry
+        final BuildMetadataEntry entry = function.apply(key);
+        if (entry == null) {
+          LOG.debug("Symbols cache. There is no metadata entry with key: " + key);
+          return Optional.empty();
+        }
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Symbols cache. Key: " + key + " Entry: " + entry);
+        }
 
-      // Cache affected composite key for this build
-      final Collection<String> keys = myCachedKeysByBuildId.computeIfAbsent(
-        entry.getBuildId(), buildId -> ConcurrentHashMap.newKeySet()
-      );
-      keys.add(s);
+        // Cache affected composite key for this build
+        final Collection<String> keys = myCachedKeysByBuildId.computeIfAbsent(
+          entry.getBuildId(), buildId -> ConcurrentHashMap.newKeySet()
+        );
+        keys.add(key);
 
-      return Optional.of(entry);
-    });
+        return Optional.of(entry);
+      });
+    } catch (ExecutionException e) {
+      LOG.error("Exception has occured during loading metadata", e);
+      return null;
+    }
 
     if (metadataEntry != null && metadataEntry.isPresent()) {
       return metadataEntry.get();
     }
 
     return null;
+/*
+    LOG.debug("Creating symbols cache for entry with key: " + key);
+
+    // Calculate build metadata entry
+    final BuildMetadataEntry entry = function.apply(key);
+    if (entry == null) {
+      LOG.debug("Symbols cache. There is no metadata entry with key: " + key);
+      return null;
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Symbols cache. Key: " + key + " Entry: " + entry);
+    }
+    return entry; */
   }
 
   public void removeEntry(@NotNull final String key) {

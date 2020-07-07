@@ -32,7 +32,7 @@ kotlin { experimental { coroutines 'enable' } }
 dependencies {
     agent project(path: ':teamcity-symbol-agent', configuration: 'plugin')
     compile project(':teamcity-symbol-common')
-    compile 'com.github.ben-manes.caffeine:caffeine:2.6.2'
+    compile 'com.google.guava:guava:29.0-jre'
 
     provided "org.jetbrains.teamcity.internal:server:$teamcityVersion"
     provided files("${teamcityDir}/webapps/ROOT/WEB-INF/lib/web.jar")
