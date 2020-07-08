@@ -40,7 +40,7 @@ public class PdbFilePatcherAdapterImpl implements PdbFilePatcherAdapter {
   @Override
   public Collection<File> getReferencedSourceFiles(final File symbolsFile) throws IOException {
     final ExecResult result = mySrcToolExe.dumpSources(symbolsFile, myBuildLogger);
-    if (result.getExitCode() != 0) {
+    if (result.getExitCode() < 0) {
       throw new IOException(String.format("Failed to dump sources from symbols file %s: %s", symbolsFile, result));
     }
 

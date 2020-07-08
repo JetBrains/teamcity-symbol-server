@@ -26,7 +26,6 @@ public class SrcToolExe {
 
   private static final String SRCTOOL_EXE = "srctool.exe";
   private static final String DUMP_REFERENCES_SWITCH = "-r";
-  private static final String ZERRO_ON_SUCCESS_SWITCH = "-z";
 
   private final File myPath;
 
@@ -39,13 +38,12 @@ public class SrcToolExe {
     commandLine.setWorkDirectory(myPath.getParent());
     commandLine.setExePath(myPath.getPath());
     commandLine.addParameter(DUMP_REFERENCES_SWITCH);
-    commandLine.addParameter(ZERRO_ON_SUCCESS_SWITCH);
     commandLine.addParameter(pdbFile.getAbsolutePath());
 
     buildLogger.message(String.format("Running command %s", commandLine.getCommandLineString()));
 
     final ExecResult execResult = SimpleCommandLineProcessRunner.runCommand(commandLine, null);
-    if (execResult.getExitCode() != 0) {
+    if (execResult.getExitCode() < 0) {
       buildLogger.warning(String.format("%s completed with exit code %s.", SRCTOOL_EXE, execResult));
       buildLogger.warning("Stdout: " + execResult.getStdout());
       buildLogger.warning("Stderr: " + execResult.getStderr());
