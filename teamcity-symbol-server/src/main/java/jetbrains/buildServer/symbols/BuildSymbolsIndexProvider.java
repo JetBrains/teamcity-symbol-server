@@ -106,7 +106,7 @@ public class BuildSymbolsIndexProvider implements BuildMetadataProvider {
           data.put(ARTIFACT_PATH_KEY, artifactPath);
 
           metadataStorageWriter.addParameters(metadataKey, data);
-          mySymbolsCache.removeEntry(metadataKey);
+          mySymbolsCache.invalidate(buildId);
           processedSymbols.add(metadataKey);
         }
       }

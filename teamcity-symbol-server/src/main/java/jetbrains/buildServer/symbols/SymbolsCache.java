@@ -19,14 +19,12 @@ package jetbrains.buildServer.symbols;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalNotification;
-import java.time.Duration;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.SBuild;
@@ -43,119 +41,124 @@ public class SymbolsCache {
   /**
    * Contains the map of cached requests to symbol server metadata storage.
    *
-   * The key is a composite PDB entry key, see BuildSymbolsIndexProvider#getMetadataKey.
-   * The value is a build metadata entry or empty value if entry was not found.
+   * The key is a buildId.
+   * The value is a build metadata entry map or empty value if build was not found.
    */
-  private final Cache<String, Optional<BuildMetadataEntry>> myCachedRequests;
+  private final Cache<Long, Optional<Map<String, BuildMetadataEntry>>> myCachedBuilds;
 
-  /**
-   * Contains the map of cached composite keys by build id used during cleanup on event
-   * BuildServerListener#buildArtifactsChanged(jetbrains.buildServer.serverSide.SBuild).
-   *
-   * The key is a build id.
-   * The value is a set of cached composite keys.
-   */
-  private final ConcurrentMap<Long, Collection<String>> myCachedKeysByBuildId = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Long> myKeyToBuildIdMap = new ConcurrentHashMap<>();
+  private final Cache<String, Boolean> myMissedSymbols;
 
   public SymbolsCache(@NotNull final EventDispatcher<BuildServerListener> events) {
-    final int cacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ENTRIES_SIZE, 256);
-    final int expirationTimeSec = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_EXPIRATION_TIME_SEC, 60 * 30);
+    final int missedSymbolsCacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_MISS_CACHE_ENTRIES_SIZE, 2048);
+    final int missedSymbolsExpirationTimeSec = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_MISS_CACHE_EXPIRATION_TIME_SEC, 60 * 60 * 3);
 
-    myCachedRequests = CacheBuilder
+    myMissedSymbols = CacheBuilder
+      .newBuilder()
+      .maximumSize(missedSymbolsCacheSize)
+      .expireAfterAccess(missedSymbolsExpirationTimeSec, TimeUnit.SECONDS)
+      .build();
+
+    final int cacheSize = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ENTRIES_SIZE, 32);
+    final int expirationTimeSec = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_EXPIRATION_TIME_SEC, 60 * 60);
+
+    myCachedBuilds = CacheBuilder
       .newBuilder()
       .maximumSize(cacheSize)
       .expireAfterAccess(expirationTimeSec, TimeUnit.SECONDS)
-      .removalListener((RemovalNotification<String, Optional<BuildMetadataEntry>> notification) -> {
-        final String key = notification.getKey();
-        final Optional<BuildMetadataEntry> entry = notification.getValue();
-        if (entry == null || !entry.isPresent()) {
-          LOG.debug("Symbols cache. Removing empty entry with key: " + key);
+      .removalListener((RemovalNotification<Long, Optional<Map<String, BuildMetadataEntry>>> notification) -> {
+        LOG.debug("Removing cache entry. BuildId: " + notification.getValue());
+
+        Optional<Map<String, BuildMetadataEntry>> notificationValue = notification.getValue();
+        if (notificationValue == null || !notificationValue.isPresent()) {
           return;
         }
 
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Symbols cache. Removing entry with key: " + key + ", value: " + entry.get());
+        for (String entryKey: notificationValue.get().keySet()) {
+          LOG.debug("Removing entryKey: " + entryKey);
+          myKeyToBuildIdMap.remove(entryKey);
         }
 
-        final BuildMetadataEntry buildMetadataEntry = entry.get();
-        final long buildId = buildMetadataEntry.getBuildId();
-        final Collection<String> keys = myCachedKeysByBuildId.get(buildId);
-        if (keys == null) {
-          return;
-        }
-        keys.remove(key);
-        if (keys.isEmpty()) {
-          myCachedKeysByBuildId.remove(buildId);
-        }
+        LOG.debug("All build-related entries was removed from cache. BuildId: " + notification.getValue());
       })
       .build();
 
     events.addListener(new BuildServerAdapter() {
       @Override
       public void buildArtifactsChanged(@NotNull SBuild build) {
-        final Collection<String> keys = myCachedKeysByBuildId.remove(build.getBuildId());
-        if (keys != null) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Symbols cache. Invalidating keys: " + String.join(",", keys));
-          }
-          myCachedRequests.invalidateAll(keys);
-        }
+        myCachedBuilds.invalidate(build.getBuildId());
       }
     });
   }
 
   public BuildMetadataEntry getEntry(@NotNull final String key,
-                                     @NotNull final Function<String, BuildMetadataEntry> function) {
-    final Optional<BuildMetadataEntry> metadataEntry;
-    try {
-      metadataEntry = myCachedRequests.get(key, () -> {
-        LOG.debug("Creating symbols cache for entry with key: " + key);
+                                     @NotNull final MetadataSource metadataSource) {
+    Boolean missedSymbol = myMissedSymbols.getIfPresent(key);
+    if (missedSymbol != null && missedSymbol) {
+      LOG.debug("Symbol server does not host the symbol. Missed symbols cache contains key: " + key);
+      return null;
+    }
 
-        // Calculate build metadata entry
-        final BuildMetadataEntry entry = function.apply(key);
-        if (entry == null) {
-          LOG.debug("Symbols cache. There is no metadata entry with key: " + key);
+    try {
+      Long buildId = myKeyToBuildIdMap.get(key);
+      if (buildId == null) {
+        LOG.debug("Searching buildId by key. Key: " + key);
+        buildId = metadataSource.getBuildIdByEntryKey(key);
+        if (buildId == null) {
+          LOG.debug("Could not found buildId by key. Key: " + key);
+          myMissedSymbols.put(key, true);
+          return null;
+        } else {
+          myKeyToBuildIdMap.put(key, buildId);
+        }
+      }
+
+      LOG.debug("Key was found in keyToBuildMap. Key: " + key + ", BuildId: " + buildId);
+
+      final AtomicBoolean shouldUpdateMap = new AtomicBoolean(false);
+      final Long lambdaBuildId = buildId;
+      final Optional<Map<String, BuildMetadataEntry>> buildEntries = myCachedBuilds.get(buildId, () -> {
+        final List<BuildMetadataEntry> entries = metadataSource.getEntriesByBuildId(lambdaBuildId);
+        if (entries.isEmpty()) {
           return Optional.empty();
         }
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Symbols cache. Key: " + key + " Entry: " + entry);
+        shouldUpdateMap.set(true);
+        final HashMap<String, BuildMetadataEntry> result = new HashMap<String, BuildMetadataEntry>();
+        for (BuildMetadataEntry entry: entries) {
+          result.put(entry.getKey(), entry);
         }
-
-        // Cache affected composite key for this build
-        final Collection<String> keys = myCachedKeysByBuildId.computeIfAbsent(
-          entry.getBuildId(), buildId -> ConcurrentHashMap.newKeySet()
-        );
-        keys.add(key);
-
-        return Optional.of(entry);
+        return Optional.of(result);
       });
-    } catch (ExecutionException e) {
-      LOG.error("Exception has occured during loading metadata", e);
-      return null;
-    }
 
-    if (metadataEntry != null && metadataEntry.isPresent()) {
-      return metadataEntry.get();
-    }
+      if (buildEntries.isPresent()) {
+        LOG.debug("Build entries was found in cache. BuildId: " + buildId);
+        final Map<String, BuildMetadataEntry> buildEntriesMap = buildEntries.get();
+        if (shouldUpdateMap.get()) {
+          for (String entryKey: buildEntriesMap.keySet()) {
+            myKeyToBuildIdMap.put(entryKey, lambdaBuildId);
+            myMissedSymbols.invalidate(entryKey);
+          }
+        }
+        final BuildMetadataEntry metadata = buildEntriesMap.get(key);
+        if (metadata != null) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Key was found in cache. Key: " + key + ", Value: " + metadata);
+          }
+          return metadata;
+        }
+      }
 
+      LOG.debug("Key was found in keyToBuildIdMap but there was no such build in cache. Removing key from keyToBuildIdMap. Key: " + key + ", BuildId: " + buildId);
+      myKeyToBuildIdMap.remove(key);
+    } catch (ExecutionException | InterruptedException | TimeoutException e) {
+      LOG.error("Exception occured during metadata loading", e);
+    }
     return null;
-/*
-    LOG.debug("Creating symbols cache for entry with key: " + key);
-
-    // Calculate build metadata entry
-    final BuildMetadataEntry entry = function.apply(key);
-    if (entry == null) {
-      LOG.debug("Symbols cache. There is no metadata entry with key: " + key);
-      return null;
-    }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Symbols cache. Key: " + key + " Entry: " + entry);
-    }
-    return entry; */
   }
 
-  public void removeEntry(@NotNull final String key) {
-    LOG.debug("Removing symbols cache for entries with key: " + key);
-    myCachedRequests.invalidate(key);
+  public void invalidate(long buildId) {
+    LOG.debug("Removing symbols cache for build with BuildId: " + buildId);
+    myCachedBuilds.invalidate(buildId);
   }
 }
+

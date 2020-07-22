@@ -16,11 +16,17 @@
 
 package jetbrains.buildServer.symbols;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SecurityContextEx;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.auth.Permission;
@@ -61,9 +67,9 @@ public class DownloadSymbolsController extends BaseController {
   );
 
   @NotNull private final SecurityContextEx mySecurityContext;
-  @NotNull private final MetadataStorage myBuildMetadataStorage;
   @NotNull private final AuthHelper myAuthHelper;
   private final SymbolsCache mySymbolsCache;
+  private final MetadatSourceFactoryImpl myMetadataSourceFactory;
 
   public DownloadSymbolsController(@NotNull SBuildServer server,
                                    @NotNull WebControllerManager controllerManager,
@@ -74,9 +80,9 @@ public class DownloadSymbolsController extends BaseController {
                                    @NotNull SymbolsCache symbolsCache) {
     super(server);
     mySecurityContext = securityContext;
-    myBuildMetadataStorage = buildMetadataStorage;
     myAuthHelper = authHelper;
     mySymbolsCache = symbolsCache;
+    myMetadataSourceFactory = new MetadatSourceFactoryImpl(buildMetadataStorage);
     final String path = SymbolsConstants.APP_SYMBOLS + "/**";
     controllerManager.registerController(path, this);
     authInterceptor.addPathNotRequiringAuth(path);
@@ -207,14 +213,87 @@ public class DownloadSymbolsController extends BaseController {
   @Nullable
   private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName){
     final String metadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
-    return mySymbolsCache.getEntry(metadataKey, compositeMetadataKey -> {
-      Iterator<BuildMetadataEntry> entryIterator = myBuildMetadataStorage.getEntriesByKey(
-        BuildSymbolsIndexProvider.PROVIDER_ID, compositeMetadataKey);
-      if (entryIterator.hasNext()) {
-        return entryIterator.next();
-      } else {
+    final MetadatSourceFactoryImpl.MetadataSourceImpl metadataSource = myMetadataSourceFactory.create();
+    try {
+      return mySymbolsCache.getEntry(metadataKey, metadataSource);
+    }
+    finally {
+      metadataSource.release();
+    }
+  }
+
+
+  private class MetadatSourceFactoryImpl {
+    private final MetadataStorage myBuildMetadataStorage;
+    private final Semaphore myConcurrentDataRequestSemaphore = new Semaphore(TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_MAXREADREQUESTS, 10), false);
+
+    private MetadatSourceFactoryImpl(@NotNull final MetadataStorage buildMetadataStorage) {
+      myBuildMetadataStorage = buildMetadataStorage;
+    }
+
+    public MetadataSourceImpl create() {
+      return new MetadataSourceImpl();
+    }
+
+    public class MetadataSourceImpl implements MetadataSource {
+      private boolean lockRequested = false;
+
+      @Override
+      public List<BuildMetadataEntry> getEntriesByBuildId(final Long buildId) throws InterruptedException, TimeoutException {
+        acquireLockIfNeed();
+
+        final Iterator<BuildMetadataEntry> entriesIterator =
+          myBuildMetadataStorage.getBuildEntry(buildId, BuildSymbolsIndexProvider.PROVIDER_ID);
+
+        final ArrayList<BuildMetadataEntry> result = new ArrayList<BuildMetadataEntry>();
+        while(entriesIterator.hasNext()) {
+          final BuildMetadataEntry entry = entriesIterator.next();
+          result.add(entry);
+        }
+        return result;
+      }
+
+      @Override
+      public Long getBuildIdByEntryKey(final String key) throws InterruptedException, TimeoutException {
+        acquireLockIfNeed();
+
+        final Iterator<BuildMetadataEntry> entryIterator =
+          myBuildMetadataStorage.getEntriesByKey(BuildSymbolsIndexProvider.PROVIDER_ID, key);
+
+        if (entryIterator.hasNext()) {
+          final BuildMetadataEntry entry = entryIterator.next();
+          if (entry != null) {
+            return entry.getBuildId();
+          }
+        }
         return null;
       }
-    });
+
+      public void release() {
+        releaseLockIfNeed();
+      }
+
+      private void acquireLockIfNeed() throws InterruptedException, TimeoutException {
+        if (lockRequested) {
+          return;
+        }
+
+        final int timeout = TeamCityProperties.getInteger(SymbolsConstants.SYMBOLS_SERVER_CACHE_ACQUIRE_LOCK_TIMEOUT, 150);
+        if (myConcurrentDataRequestSemaphore.tryAcquire(timeout, TimeUnit.SECONDS)) {
+          lockRequested = true;
+        } else {
+          LOG.warn("Could not acquire read metadata lock during " + timeout + " sec");
+          throw new TimeoutException("Could not acquire read metadata lock during " + timeout + " sec");
+        }
+      }
+
+      private void releaseLockIfNeed() {
+        if (!lockRequested) {
+          return;
+        }
+        myConcurrentDataRequestSemaphore.release();
+        lockRequested = false;
+      }
+    }
   }
 }
