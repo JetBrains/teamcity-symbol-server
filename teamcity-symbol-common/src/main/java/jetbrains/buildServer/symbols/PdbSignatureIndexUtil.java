@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.symbols;
 
+import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.XmlUtil;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -37,15 +38,17 @@ class PdbSignatureIndexUtil {
   private static final String FILE_PATH = "file-path";
   private static final String FILE_SIGNS = "file-signs";
   private static final String FILE_SIGN_ENTRY = "file-sign-entry";
+  private static final int GUID_SIGN_LENGTH = 32;
 
   @NotNull
-  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream, final boolean withDebugType) throws JDOMException, IOException {
+  static Set<PdbSignatureIndexEntry> read(@NotNull final InputStream inputStream, final boolean cutDbgAge) throws JDOMException, IOException {
     final SAXBuilder builder = new SAXBuilder();
     final Document document = builder.build(inputStream);
     final Set<PdbSignatureIndexEntry> result = new HashSet<PdbSignatureIndexEntry>();
     for (Object signElementObject : document.getRootElement().getChildren()){
       final Element signElement = (Element) signElementObject;
-      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN), withDebugType), signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
+      result.add(new PdbSignatureIndexEntry(extractGuid(signElement.getAttributeValue(SIGN), cutDbgAge),
+                                            signElement.getAttributeValue(FILE_NAME), signElement.getAttributeValue(FILE_PATH)));
     }
     return result;
   }
@@ -65,10 +68,14 @@ class PdbSignatureIndexUtil {
     XmlUtil.saveDocument(new Document(root), outputStream);
   }
 
-  public static String extractGuid(String sign, boolean cutDebugType) {
-    if (cutDebugType)
-      return sign.substring(0, sign.length() - 1).toLowerCase(); //last symbol is PEDebugType
-    else
+  public static String extractGuid(String sign, boolean cutDbgAge) {
+    if (cutDbgAge) {
+      // Windows signature pdb ends with psb age value (usuall it is 1)
+      // for Portable pdb it ends with FFFFFFFF.
+      // But Guid is the first one for the all cases
+      return StringUtil.truncateStringValue(sign, GUID_SIGN_LENGTH).toLowerCase();
+    } else {
       return sign.toLowerCase();
+    }
   }
 }

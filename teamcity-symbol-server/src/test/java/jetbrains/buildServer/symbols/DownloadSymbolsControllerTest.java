@@ -79,7 +79,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
     assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
 
-    myRequest.setRequestURI("mock", getRegisterPdbUrl("8EF4E863187C45E78F4632152CC82FEB", "secur32.pdb", "secur32.pdb"));
+    myRequest.setRequestURI("mock", getRegisterPdbUrl("8EF4E863187C45E78F4632152CC82FEB1", "secur32.pdb", "secur32" +
+                                                                                                          ".pdb"));
 
     doGet();
 
@@ -119,8 +120,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     RunningBuildEx build = startBuild();
     finishBuild(build, false);
 
-    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
-    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB1";
+    final String guid = "8EF4E863187C45E78F4632152CC82FEB";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
 
@@ -139,8 +140,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     RunningBuildEx build = startBuild();
     finishBuild(build, false);
 
-    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
-    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB1";
+    final String guid = "8EF4E863187C45E78F4632152CC82FEB";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
 
@@ -162,9 +163,9 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     user.addRole(RoleScope.projectScope(myProject.getProjectId()), getProjectDevRole());
     assertTrue(user.isPermissionGrantedForProject(myProject.getProjectId(), Permission.VIEW_BUILD_RUNTIME_DATA));
 
-    final String fileSignatureUpper = "8EF4E863187C45E78F4632152CC82FEB";
+    final String fileSignatureUpper = "8EF4E863187C45E78F4632152CC82FEB1";
     final String fileSignature = lowercaseSignature ? fileSignatureUpper.toLowerCase() : fileSignatureUpper;
-    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String guid = "8EF4E863187C45E78F4632152CC82FEB";
     final String fileName = "secur32.pdb";
     final String filePath = "foo/secur32.pdb";
     final byte[] fileContent = new byte[]{(byte) (lowercaseSignature ? 1 : 0)};
@@ -201,8 +202,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     build.publishArtifact(fileName, file);
     finishBuild(build, false);
 
-    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB";
-    final String guid = "8EF4E863187C45E78F4632152CC82FE";
+    final String fileSignature = "8EF4E863187C45E78F4632152CC82FEB1";
+    final String guid = "8EF4E863187C45E78F4632152CC82FEB";
 
     myBuildMetadataStorage.addEntry(build.getBuildId(), guid.toLowerCase(), fileName, fileName);
     myRequest.setRequestURI("mock", String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName));
@@ -225,7 +226,8 @@ public class DownloadSymbolsControllerTest extends BaseControllerTestCase {
     new File(artDirectory, "foo").createNewFile();
     myBuildType.setArtifactPaths(artDirectory.getAbsolutePath());
     RunningBuildEx build = startBuild();
-    myBuildMetadataStorage.addEntry(build.getBuildId(), PdbSignatureIndexUtil.extractGuid(fileSignature, true), fileName, artifactPath);
+    myBuildMetadataStorage.addEntry(build.getBuildId(), PdbSignatureIndexUtil.extractGuid(fileSignature, true),
+                                    fileName, artifactPath);
     return String.format("/app/symbols/%s/%s/%s", fileName, fileSignature, fileName);
   }
 }

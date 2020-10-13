@@ -57,7 +57,7 @@ namespace JetBrains.CommandLine.Symbols
         return null;
       }
 
-      return string.Format("{0}{1:X}", debugInfo.Signature.ToString("N").ToUpperInvariant(), debugInfo.AgeOrTimestamp);
+      return string.Format("{0}ffffffff", debugInfo.Signature.ToString("N").ToUpperInvariant());
     }
   }
 }
