@@ -24,6 +24,7 @@ public class SymbolsConstants {
 
   public static final String SOURCES_SERVER_URL_PARAM_NAME = "symbols.sources-server-url";
   public static final String SERVER_OWN_URL_PARAM_NAME = "symbols.server-own-url";
+  public static final String INDEXING_ENABLED_PARAM_NAME = "symbols.indexing.enabled";
 
   public static final String APP_SYMBOLS = "/app/symbols";
   public static final String APP_SOURCES = "/app/sources";
@@ -37,4 +38,6 @@ public class SymbolsConstants {
   public static final String SYMBOLS_SERVER_MISS_CACHE_EXPIRATION_TIME_SEC = "teamcity.symbolServer.miss.cache.expirationTime.sec";
   public static final String SYMBOLS_SERVER_CACHE_MAXREADREQUESTS = "teamcity.symbolServer.cache.maxReadRequests";
   public static final String SYMBOLS_SERVER_CACHE_ACQUIRE_LOCK_TIMEOUT ="teamcity.symbolServer.cache.acqure.lock.timeout";
+
+  public static final String BRANCH_FILTER = "teamcity.symbols.branchFilter";
 }

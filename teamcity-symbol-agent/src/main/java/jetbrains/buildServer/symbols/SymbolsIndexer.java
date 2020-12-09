@@ -32,6 +32,7 @@ import jetbrains.buildServer.symbols.tools.PdbStrExe;
 import jetbrains.buildServer.symbols.tools.SrcToolExe;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
+import jetbrains.buildServer.util.StringUtil;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +78,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   private File mySrcSrvHomeDir;
   @Nullable private FileUrlProvider myFileUrlProvider;
   private boolean myBuildHasIndexerFeature;
+  private boolean myIndexingEnabledByProperty;
 
   public SymbolsIndexer(@NotNull final PluginDescriptor pluginDescriptor,
                         @NotNull final EventDispatcher<AgentLifeCycleListener> agentDispatcher,
@@ -97,6 +99,13 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
           return;
         }
         LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature enabled for build with id " + buildId);
+
+        final String indexingEnabled = runningBuild.getSharedConfigParameters().get(SymbolsConstants.INDEXING_ENABLED_PARAM_NAME);
+        myIndexingEnabledByProperty = StringUtil.isEmpty(indexingEnabled) || StringUtil.isTrue(indexingEnabled);
+        if (!myIndexingEnabledByProperty) {
+          LOG.debug(SymbolsConstants.BUILD_FEATURE_TYPE + " build feature disabled by param. No indexing will be performed for build with id " + buildId);
+          return;
+        }
 
         myProgressLogger = runningBuild.getBuildLogger();
         myBuildTempDirectory = runningBuild.getBuildTempDirectory();
@@ -347,7 +356,7 @@ public class SymbolsIndexer extends ArtifactsBuilderAdapter {
   }
 
   private boolean isIndexingDisabled() {
-    return !myBuildHasIndexerFeature || myFileUrlProvider == null || mySrcSrvHomeDir == null;
+    return !myBuildHasIndexerFeature || myFileUrlProvider == null || mySrcSrvHomeDir == null || !myIndexingEnabledByProperty;
   }
 
   private static void checkAndReportRuntimeRequirements(@NotNull BuildAgentConfiguration agentConfiguration, @NotNull BuildProgressLogger logger){
