@@ -20,7 +20,6 @@ import jetbrains.buildServer.serverSide.metadata.BuildMetadataEntry;
 import jetbrains.buildServer.serverSide.metadata.MetadataStorage;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.util.FileUtil;
-import jetbrains.buildServer.util.Predicate;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.WebUtil;
@@ -108,52 +107,46 @@ public class DownloadSymbolsController extends BaseController {
     String guid = PdbSignatureIndexUtil.extractGuid(signature, true);
     LOG.debug(String.format("Symbol file requested. File name: %s. Guid: %s.", fileName, guid));
 
-    final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
-    if(metadataEntry == null) {
-      LOG.debug(String.format("There is no information about symbol file %s with id %s in the index.", fileName, guid));
-
-      WebUtil.notFound(request, response, "File not found", null);
-      return null;
-    }
-    final String projectId = findRelatedProjectId(metadataEntry);
-    if(projectId == null) {
-      WebUtil.notFound(request, response, "File not found", null);
-      return null;
-    }
-
-    final SUser user = myAuthHelper.getAuthenticatedUser(request, response, new Predicate<SUser>() {
-      public boolean apply(SUser user) {
-        return user.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA);
-      }
-    });
-    if (user == null) return null;
-
     try {
-      mySecurityContext.runAs(user, new SecurityContextEx.RunAsAction() {
-        public void run() throws Throwable {
-          final BuildArtifact buildArtifact = findArtifact(metadataEntry);
-          if(buildArtifact == null){
-            WebUtil.notFound(request, response, "Symbol file not found", null);
-            LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
-            return;
-          }
+      final BuildMetadataEntry metadataEntry = getMetadataEntry(guid, fileName);
+      if (metadataEntry == null) {
+        LOG.debug(String.format("There is no information about symbol file %s with id %s in the index.", fileName, guid));
 
-          LOG.debug(String.format("Start sending symbols file. File name: %s. Guid: %s.", fileName, guid));
-          BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
-          try {
-            LOG.debug(String.format("Getting artifact stream for symbols file. File name: %s. Guid: %s.", fileName, guid));
-            InputStream input = buildArtifact.getInputStream();
-            try {
-              LOG.debug(String.format("Sending symbols file. File name: %s. Guid: %s.", fileName, guid));
-              FileUtil.copyStreams(input, output);
-            } finally {
-              FileUtil.close(input);
-            }
-          } finally {
-            FileUtil.close(output);
-          }
-          LOG.debug(String.format("Symbols file successfully transfered. File name: %s. Guid: %s.", fileName, guid));
+        WebUtil.notFound(request, response, "File not found", null);
+        return null;
+      }
+      final String projectId = findRelatedProjectId(metadataEntry);
+      if (projectId == null) {
+        WebUtil.notFound(request, response, "File not found", null);
+        return null;
+      }
+
+      final SUser user = myAuthHelper.getAuthenticatedUser(request, response, authority -> authority.isPermissionGrantedForProject(projectId, Permission.VIEW_BUILD_RUNTIME_DATA));
+      if (user == null) return null;
+
+      mySecurityContext.runAs(user, () -> {
+        final BuildArtifact buildArtifact = findArtifact(metadataEntry);
+        if (buildArtifact == null) {
+          WebUtil.notFound(request, response, "Symbol file not found", null);
+          LOG.debug(String.format("Symbol file not found. File name: %s. Guid: %s.", fileName, guid));
+          return;
         }
+
+        LOG.debug(String.format("Start sending symbols file. File name: %s. Guid: %s.", fileName, guid));
+        BufferedOutputStream output = new BufferedOutputStream(response.getOutputStream());
+        try {
+          LOG.debug(String.format("Getting artifact stream for symbols file. File name: %s. Guid: %s.", fileName, guid));
+          InputStream input = buildArtifact.getInputStream();
+          try {
+            LOG.debug(String.format("Sending symbols file. File name: %s. Guid: %s.", fileName, guid));
+            FileUtil.copyStreams(input, output);
+          } finally {
+            FileUtil.close(input);
+          }
+        } finally {
+          FileUtil.close(output);
+        }
+        LOG.debug(String.format("Symbols file successfully transferred. File name: %s. Guid: %s.", fileName, guid));
       });
     } catch (Throwable throwable) {
       LOG.debug(String.format("Failed to send symbols for file %s: %s", fileName, throwable.getMessage()), throwable);
@@ -188,26 +181,30 @@ public class DownloadSymbolsController extends BaseController {
   }
 
   @Nullable
-  private String findRelatedProjectId(@NotNull BuildMetadataEntry metadataEntry) {
-    long buildId = metadataEntry.getBuildId();
-    final SBuild build = myServer.findBuildInstanceById(buildId);
-    if(build == null) {
-      LOG.debug(String.format("Failed to find build by id %d. Requested symbol file with id %s expected to be produced by that build.", buildId, metadataEntry.getKey()));
-      return null;
-    }
-    return build.getProjectId();
+  private String findRelatedProjectId(@NotNull BuildMetadataEntry metadataEntry) throws Throwable {
+    return mySecurityContext.runAsSystem(() -> {
+      long buildId = metadataEntry.getBuildId();
+      final SBuild build = myServer.findBuildInstanceById(buildId);
+      if (build == null) {
+        LOG.debug(String.format("Failed to find build by id %d. Requested symbol file with id %s expected to be produced by that build.", buildId, metadataEntry.getKey()));
+        return null;
+      }
+      return build.getProjectId();
+    });
   }
 
   @Nullable
-  private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName){
-    final String metadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
-    final MetadatSourceFactoryImpl.MetadataSourceImpl metadataSource = myMetadataSourceFactory.create();
-    try {
-      return mySymbolsCache.getEntry(metadataKey, metadataSource);
-    }
-    finally {
-      metadataSource.release();
-    }
+  private BuildMetadataEntry getMetadataEntry(@NotNull String signature, @NotNull String fileName) throws Throwable {
+    return mySecurityContext.runAsSystem(() -> {
+      final String metadataKey = BuildSymbolsIndexProvider.getMetadataKey(signature, fileName);
+      final MetadatSourceFactoryImpl.MetadataSourceImpl metadataSource = myMetadataSourceFactory.create();
+      try {
+        return mySymbolsCache.getEntry(metadataKey, metadataSource);
+      }
+      finally {
+        metadataSource.release();
+      }
+    });
   }
 
 
